@@ -214,7 +214,7 @@
     <div class="modal-content">
       <span id="closeSettings" class="close">&times;</span>
       <h2>Settings</h2>
-      <div style="font-size: 15px; color: black" align="center">Ver 1.2 Data transmission update</div>
+      <div style="font-size: 15px; color: black" align="center">Ver 1.2.1 Plugins Update</div>
       <div>You can grab some "non practical" files from this link!: <a href="https://cocalc.com/share/public_paths/5704763e196fc357badb743d72d85dbd411e09b2">Non Practical</a>
       <div>
         <label for="bgColorPicker">Background Color: </label>
@@ -710,28 +710,41 @@
     
     loadCustomizations();
     renderFileList();
-    const pluginURL = "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/refs/heads/main/Upgrade.js"; // ← Replace with your URL
+const pluginURL = "https://your.raw.link/plugin.js"; // Your raw plugin URL
 
-async function pluginLoader() {
+// Always run plugin if stored
+function runStoredPlugin() {
+  const storedScript = localStorage.getItem("plugin_script");
+  if (storedScript) {
+    const script = document.createElement("script");
+    script.textContent = storedScript;
+    document.body.appendChild(script);
+    console.log("Plugin loaded from localStorage.");
+  }
+}
+
+// Check for updates in the background
+async function checkForPluginUpdates() {
   try {
     const response = await fetch(pluginURL);
-    if (!response.ok) throw new Error("Failed to fetch plugin");
     const newScript = await response.text();
-    
     const storedScript = localStorage.getItem("plugin_script");
 
     if (storedScript !== newScript) {
       localStorage.setItem("plugin_script", newScript);
-      const script = document.createElement("script");
-      script.textContent = newScript;
-      document.body.appendChild(script);
-      console.log("Plugin executed and stored.");
+      console.log("Plugin updated from server.");
     } else {
-      console.log("Plugin is already up to date.");
+      console.log("Plugin is up to date.");
     }
-  } catch (error) {
-    console.error("Plugin load failed:", error);
+  } catch (e) {
+    console.error("Plugin fetch failed:", e);
   }
+}
+
+// Combine the two
+function pluginLoader() {
+  runStoredPlugin();         // Always run whatever is stored
+  checkForPluginUpdates();   // Then check for updates silently
 }
 
 // Run on startup
