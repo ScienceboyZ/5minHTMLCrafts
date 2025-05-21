@@ -18,6 +18,7 @@
     #toolbar {
       margin-bottom: 10px;
     }
+    <button id="refreshPluginBtn">Refresh Plugins</button>
     button {
       margin-right: 5px;
       padding: 5px 10px;
@@ -702,6 +703,10 @@
         document.body.style.backgroundImage = "none";
       }
     }
+    document.getElementById("refreshPluginBtn").onclick = function () {
+  localStorage.removeItem("plugin_script"); // Optional: force reload
+  pluginLoader(); // Re-run the loader
+};
     
     loadCustomizations();
     renderFileList();
