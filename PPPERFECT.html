@@ -729,12 +729,8 @@ async function checkForPluginUpdates() {
     const response = await fetch(pluginURL);
     const newScript = await response.text();
     const storedScript = localStorage.getItem("plugin_script");
-
-    if (storedScript !== newScript) {
       localStorage.setItem("plugin_script", newScript);
       console.log("Plugin updated from server.");
-    } else {
-      console.log("Plugin is up to date.");
     }
   } catch (e) {
     console.error("Plugin fetch failed:", e);
