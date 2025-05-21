@@ -705,6 +705,32 @@
     
     loadCustomizations();
     renderFileList();
+    const pluginURL = "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/refs/heads/main/Upgrade.js"; // ← Replace with your URL
+
+async function pluginLoader() {
+  try {
+    const response = await fetch(pluginURL);
+    if (!response.ok) throw new Error("Failed to fetch plugin");
+    const newScript = await response.text();
+    
+    const storedScript = localStorage.getItem("plugin_script");
+
+    if (storedScript !== newScript) {
+      localStorage.setItem("plugin_script", newScript);
+      const script = document.createElement("script");
+      script.textContent = newScript;
+      document.body.appendChild(script);
+      console.log("Plugin executed and stored.");
+    } else {
+      console.log("Plugin is already up to date.");
+    }
+  } catch (error) {
+    console.error("Plugin load failed:", error);
+  }
+}
+
+// Run on startup
+pluginLoader();
   </script>
 </body>
 </html>
