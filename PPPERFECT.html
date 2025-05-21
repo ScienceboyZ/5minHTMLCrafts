@@ -94,7 +94,7 @@
     #fullscreenOverlay {
       display: none;
       position: fixed;
-      top: 0;
+      top: 0; 
       left: 0;
       width: 100vw;
       height: 100vh;
@@ -173,25 +173,24 @@
     <button id="fullscreenBtn">Full Screen</button>
     <button id="runBtn">Run</button>
     <button id="settingsBtn">Settings</button>
-    <button id="refreshPluginBtn">Refresh Plugins</button>
     <!-- Hidden file input for ZIP files -->
     <input type="file" id="zipInput" accept=".zip" style="display: none;">
   </div>
- 
+  
   <!-- Breadcrumb Navigation -->
   <div id="breadcrumb"></div>
- 
+  
   <!-- File Explorer -->
   <div id="explorer">
     <ul id="fileList"></ul>
   </div>
- 
+  
   <!-- iFrame Runner -->
   <div id="iframeContainer">
     <!-- Allow scripts and same-origin in the iframe for complex UI -->
     <iframe id="runner" sandbox="allow-scripts allow-same-origin"></iframe>
   </div>
- 
+  
   <!-- Fullscreen Overlay (visible only in fullscreen mode) -->
   <div id="fullscreenOverlay">
     <div class="buttonContainer">
@@ -199,7 +198,7 @@
       <button id="runInFullscreenBtn">Run</button>
     </div>
   </div>
- 
+  
   <!-- Code Editor Modal -->
   <div id="editorModal" class="modal">
     <div class="modal-content">
@@ -208,13 +207,13 @@
       <button id="saveEditor" style="margin-top: 10px;">Save</button>
     </div>
   </div>
- 
+  
   <!-- Settings Modal -->
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <span id="closeSettings" class="close">&times;</span>
       <h2>Settings</h2>
-      <div style="font-size: 15px; color: black" align="center">Ver 1.2.1 Plugins Update</div>
+      <div style="font-size: 15px; color: black" align="center">Ver 1.2 Data transmission update</div>
       <div>You can grab some "non practical" files from this link!: <a href="https://cocalc.com/share/public_paths/5704763e196fc357badb743d72d85dbd411e09b2">Non Practical</a>
       <div>
         <label for="bgColorPicker">Background Color: </label>
@@ -242,7 +241,7 @@
       <button id="saveSettings">Save Settings</button>
     </div>
   </div>
-    
+  
   <script>
     // Global Variables and Initialization
     const rootFolder = { id: 0, name: "root", type: "folder", children: [] };
@@ -253,7 +252,7 @@
     let editingFileId = null;
     let newItemType = null;
     let editorInstance = null;
-   
+    
     // Helper: Recursive search for a file by id.
     function findFileById(folder, id) {
       if (folder.children) {
@@ -267,7 +266,7 @@
       }
       return null;
     }
-   
+    
     // Helper: Add an item into a folder.
     function addItemToFolder(folder, name, type, content, ext) {
       fileCounter++;
@@ -278,7 +277,7 @@
       renderFileList();
       return newItem;
     }
-   
+    
     // Render File List and Breadcrumbs
     function renderFileList() {
       const fileList = document.getElementById("fileList");
@@ -308,7 +307,7 @@
       }
       updateBreadcrumbs();
     }
-   
+    
     // Update breadcrumb navigation.
     function updateBreadcrumbs() {
       const breadcrumbDiv = document.getElementById("breadcrumb");
@@ -329,13 +328,13 @@
         }
       });
     }
-   
+    
     // Set selection in the current folder.
     function selectFile(id) {
       currentSelectedId = id;
       renderFileList();
     }
-   
+    
     // Navigate into a folder.
     function navigateIntoFolder(folder) {
       if (folder.type === "folder") {
@@ -345,31 +344,31 @@
         renderFileList();
       }
     }
-   
+    
     // Add a new file or folder manually.
     function addFileToSystem(name, type, content, ext) {
       addItemToFolder(currentFolder, name, type, content, ext);
       renderFileList();
     }
-   
+    
     // New Item Dropdown and Inline Input
     document.getElementById("newItemBtn").onclick = function() {
       const dropdown = document.getElementById("newItemDropdown");
       dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
     };
-   
+    
     document.getElementById("addFileBtn").onclick = function() {
       newItemType = "file";
       showNewItemInput();
       document.getElementById("newItemDropdown").style.display = "none";
     };
-   
+    
     document.getElementById("addFolderBtn").onclick = function() {
       newItemType = "folder";
       showNewItemInput();
       document.getElementById("newItemDropdown").style.display = "none";
     };
-   
+    
     function showNewItemInput() {
       if (document.getElementById("newItemInputContainer")) return;
       const li = document.createElement("li");
@@ -380,18 +379,18 @@
         ? "Enter file name (e.g., newFile.html)"
         : "Enter folder name";
       li.appendChild(input);
-     
+      
       const saveBtn = document.createElement("button");
       saveBtn.textContent = "Save";
       li.appendChild(saveBtn);
-     
+      
       const cancelBtn = document.createElement("button");
       cancelBtn.textContent = "Cancel";
       li.appendChild(cancelBtn);
-     
+      
       document.getElementById("fileList").appendChild(li);
       input.focus();
-     
+      
       saveBtn.onclick = function() {
         let name = input.value.trim();
         if (!name) return;
@@ -416,7 +415,7 @@
         }
       });
     }
-   
+    
     // Delete Item
     document.getElementById("deleteItemBtn").onclick = function() {
       if (currentSelectedId !== null) {
@@ -425,12 +424,12 @@
         renderFileList();
       }
     };
-   
+    
     // Open ZIP and Load Files With Nested Structure
     document.getElementById("openFileBtn").onclick = function() {
       document.getElementById("zipInput").click();
     };
-   
+    
     function addFileFromZip(path, content, ext) {
       let parts = path.split('/');
       let folder = rootFolder;
@@ -449,7 +448,7 @@
       }
       renderFileList();
     }
-   
+    
     document.getElementById("zipInput").addEventListener("change", function(event) {
       const file = event.target.files[0];
       if (file) {
@@ -474,7 +473,7 @@
       }
       event.target.value = "";
     });
-   
+    
     // Run Selected File in iFrame (with improved complex UI support)
     document.getElementById("runBtn").onclick = function() {
       if (currentSelectedId !== null) {
@@ -489,7 +488,7 @@
         }
       }
     };
-   
+    
     // Ace Editor Modal for File Editing
     function openEditor(fileId) {
       let file = findFileById(rootFolder, fileId);
@@ -516,11 +515,11 @@
         editorInstance.setValue(file.content, -1);
       }
     }
-   
+    
     document.getElementById("closeEditor").onclick = function() {
       document.getElementById("editorModal").style.display = "none";
     };
-   
+    
     document.getElementById("saveEditor").onclick = function() {
       if (editingFileId !== null) {
         const updatedContent = editorInstance.getValue();
@@ -531,7 +530,7 @@
         document.getElementById("editorModal").style.display = "none";
       }
     };
-   
+    
     window.onclick = function(event) {
       if (event.target == document.getElementById("editorModal")) {
         document.getElementById("editorModal").style.display = "none";
@@ -540,7 +539,7 @@
         document.getElementById("settingsModal").style.display = "none";
       }
     };
-   
+    
     // Fullscreen Functionality:
     // Hide the toolbar, breadcrumb, and explorer so only the runner along with fullscreen controls are visible.
     // Remove body margins so the run background image covers the full viewport and is centered.
@@ -549,10 +548,10 @@
       document.getElementById("toolbar").style.display = "none";
       document.getElementById("breadcrumb").style.display = "none";
       document.getElementById("explorer").style.display = "none";
-     
+      
       // Remove body margins for fullscreen view
       document.body.style.margin = "0";
-     
+      
       // Expand the runner to fullscreen
       const runner = document.getElementById("runner");
       runner.style.position = "fixed";
@@ -560,7 +559,7 @@
       runner.style.left = "0";
       runner.style.width = "100vw";
       runner.style.height = "100vh";
-     
+      
       // Apply run background from localStorage if present, making sure it is centered.
       const runBg = localStorage.getItem("runBgImage");
       if (runBg) {
@@ -571,35 +570,35 @@
       } else {
         document.body.style.backgroundImage = "none";
       }
-     
+      
       // Show the fullscreen overlay (which contains the exit and extra run button)
       document.getElementById("fullscreenOverlay").style.display = "block";
     });
-   
+    
     document.getElementById("exitFullscreenBtn").addEventListener("click", function() {
       // Show UI elements again
       document.getElementById("toolbar").style.display = "block";
       document.getElementById("breadcrumb").style.display = "block";
       document.getElementById("explorer").style.display = "inline-block";
-     
+      
       // Restore runner style
       const runner = document.getElementById("runner");
       runner.style.position = "static";
       runner.style.width = "600px";
       runner.style.height = "400px";
-     
+      
       // Hide fullscreen overlay and restore normal background from customizations
       document.getElementById("fullscreenOverlay").style.display = "none";
-     
+      
       // Restore body margin and customizations
       document.body.style.margin = "10px";
       loadCustomizations();
     });
-   
+    
     document.getElementById("runInFullscreenBtn").addEventListener("click", function() {
       document.getElementById("runBtn").click();
     });
-   
+    
     // Settings Modal and Customization Feature
     document.getElementById("settingsBtn").onclick = function() {
       document.getElementById("settingsModal").style.display = "block";
@@ -610,27 +609,27 @@
       document.getElementById("fontColorPicker").value = storedFontColor;
       document.getElementById("buttonColorPicker").value = storedButtonColor;
     };
-   
+    
     document.getElementById("closeSettings").onclick = function() {
       document.getElementById("settingsModal").style.display = "none";
     };
-   
+    
     document.getElementById("saveSettings").onclick = function() {
       let bgColor = document.getElementById("bgColorPicker").value;
       let fontColor = document.getElementById("fontColorPicker").value;
       let buttonColor = document.getElementById("buttonColorPicker").value;
-     
+      
       localStorage.setItem("bgColor", bgColor);
       localStorage.setItem("fontColor", fontColor);
       localStorage.setItem("buttonColor", buttonColor);
-     
+      
       document.body.style.backgroundColor = bgColor;
       document.body.style.color = fontColor;
-     
+      
       document.querySelectorAll("button").forEach(btn => {
         btn.style.backgroundColor = buttonColor;
       });
-     
+      
       const bgImageInput = document.getElementById("bgImageInput");
       if (bgImageInput.files && bgImageInput.files[0]) {
         const reader = new FileReader();
@@ -661,22 +660,22 @@
         };
         reader.readAsDataURL(runBgInput.files[0]);
       }
-     
+      
       document.getElementById("settingsModal").style.display = "none";
     };
-   
+    
     document.getElementById("removeBgImage").onclick = function() {
       localStorage.removeItem("bgImage");
       document.body.style.backgroundImage = "none";
     };
-   
+    
     document.getElementById("removeRunBgImage").onclick = function() {
       localStorage.removeItem("runBgImage");
       if(document.getElementById("fullscreenOverlay").style.display === "block") {
         document.body.style.backgroundImage = "none";
       }
     };
-   
+    
     // Load saved customization preferences on startup.
     function loadCustomizations() {
       let storedBgColor = localStorage.getItem("bgColor");
@@ -703,52 +702,9 @@
         document.body.style.backgroundImage = "none";
       }
     }
-    document.getElementById("refreshPluginBtn").onclick = function () {
-  localStorage.removeItem("plugin_script"); // Optional: force reload
-  pluginLoader(); // Re-run the loader
-};
-   
+    
     loadCustomizations();
     renderFileList();
-const pluginURL = "https://your.raw.link/plugin.js"; // Your raw plugin URL
-
-// Always run plugin if stored
-function runStoredPlugin() {
-  const storedScript = localStorage.getItem("plugin_script");
-  if (storedScript) {
-    const script = document.createElement("script");
-    script.textContent = storedScript;
-    document.body.appendChild(script);
-    console.log("Plugin loaded from localStorage.");
-  }
-}
-
-// Check for updates in the background
-async function checkForPluginUpdates() {
-  try {
-    const response = await fetch(pluginURL);
-    const newScript = await response.text();
-    const storedScript = localStorage.getItem("plugin_script");
-
-    if (storedScript !== newScript) {
-      localStorage.setItem("plugin_script", newScript);
-      console.log("Plugin updated from server.");
-    } else {
-      console.log("Plugin is up to date.");
-    }
-  } catch (e) {
-    console.error("Plugin fetch failed:", e);
-  }
-}
-
-// Combine the two
-function pluginLoader() {
-  runStoredPlugin();         // Always run whatever is stored
-  checkForPluginUpdates();   // Then check for updates silently
-}
-
-// Run on startup
-pluginLoader();
   </script>
 </body>
 </html>
