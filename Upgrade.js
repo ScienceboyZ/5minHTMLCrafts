@@ -1,6 +1,6 @@
 // Create a floating box
 const box = document.createElement('div');
-box.textContent = "I'm a plugin box!";
+box.textContent = "I'm a plugin box";
 box.style.position = 'fixed';
 box.style.top = '20px';
 box.style.right = '20px';
