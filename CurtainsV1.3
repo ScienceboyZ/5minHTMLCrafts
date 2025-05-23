@@ -631,7 +631,7 @@
         function handleGlobalTouchStart(e) {
             const target = e.target.closest('.window-titlebar');
             if (target) {
-                e.preventDefault();
+                if (!e.target.closest('.window-control')) if (!e.target.closest('.window-control')) e.preventDefault();
                 const window = target.closest('.window');
                 if (window) {
                     OS.draggedWindow = window;
@@ -770,8 +770,9 @@
             // Calculate safe positioning for mobile (avoid taskbar area)
             const maxWidth = Math.min(window.innerWidth - 40, 400);
             const maxHeight = Math.min(window.innerHeight - 160, 500);
+const taskbarHeight = 80;
             const x = Math.max(20, Math.random() * (window.innerWidth - maxWidth - 40));
-            const y = Math.max(20, Math.random() * (window.innerHeight - maxHeight - 160));
+            const y = Math.max(20, Math.random() * (window.innerHeight - maxHeight - taskbarHeight - 20));
             
             window.style.left = x + 'px';
             window.style.top = y + 'px';
@@ -948,10 +949,10 @@
                     loadAppStoreData();
                 }
                 
-                alert(`${name} has been installed successfully!`);
+                
             } catch (error) {
                 console.error('Installation error:', error);
-                alert(`Failed to install ${name}. Please try again.`);
+                
             }
         }
 
@@ -981,7 +982,7 @@
         }
 
         function createNewFile() {
-            const name = prompt('Enter file name:');
+            const name = "Untitled";
             if (name) {
                 const fileId = 'file-' + Date.now();
                 const file = {
@@ -1043,7 +1044,7 @@
                 file.modified = Date.now();
                 OS.files.set(fileId, file);
                 saveFiles();
-                alert('File saved successfully!');
+                
                 refreshFiles();
             }
         }
@@ -1064,7 +1065,7 @@
 
         // Start menu functionality
         function showStartMenu() {
-            alert('Start menu - Feature coming soon!');
+            
         }
 
         // Refresh all windows positioning
