@@ -629,9 +629,9 @@
 
         // Touch event handlers for mobile window dragging
         function handleGlobalTouchStart(e) {
-const target = e.target.closest('.window-titlebar');
-if (target && !e.target.closest('.window-control')) {
-    e.preventDefault();
+            const target = e.target.closest('.window-titlebar');
+            if (target) {
+                e.preventDefault();
                 const window = target.closest('.window');
                 if (window) {
                     OS.draggedWindow = window;
