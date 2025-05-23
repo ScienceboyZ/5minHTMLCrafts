@@ -738,7 +738,23 @@
                     break;
                 default:
                     if (app.htmlUrl) {
-                        content = `<iframe src="${app.htmlUrl}" style="width:100%;height:100%;border:none;"></iframe>`;
+                        content = `<iframe id="frame-${windowId}" style="width:100%;height:100%;border:none;"></iframe>`;
+                        setTimeout(() => {
+                            fetch(app.htmlUrl)
+                                .then(res => res.text())
+                                .then(html => {
+                                    const iframe = document.getElementById(`frame-${windowId}`);
+                                    if (iframe) {
+                                        iframe.srcdoc = html;
+                                    }
+                                })
+                                .catch(() => {
+                                    const iframe = document.getElementById(`frame-${windowId}`);
+                                    if (iframe) {
+                                        iframe.srcdoc = "<p style='padding:20px;color:red;'>Failed to fetch or render HTML content.</p>";
+                                    }
+                                });
+                        }, 100);
                     } else {
                         content = '<div style="padding:20px;">App content not available</div>';
                     }
@@ -771,8 +787,8 @@
             const maxWidth = Math.min(window.innerWidth - 40, 400);
             const maxHeight = Math.min(window.innerHeight - 160, 500);
 const taskbarHeight = 80;
-            const x = Math.max(20, Math.random() * (window.innerWidth - maxWidth - 40));
-            const y = Math.max(20, Math.random() * (window.innerHeight - maxHeight - taskbarHeight - 20));
+            const x = Math.max(20, (window.innerWidth - maxWidth) / 2);
+            const y = Math.max(20, (window.innerHeight - taskbarHeight - maxHeight) / 2);
             
             window.style.left = x + 'px';
             window.style.top = y + 'px';
