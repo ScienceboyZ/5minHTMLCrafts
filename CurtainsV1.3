@@ -209,14 +209,17 @@
 
         .window-content {
             height: calc(100% - 60px);
-            overflow: auto;
+            overflow-y: auto; overflow-x: hidden;
             background: white;
             -webkit-overflow-scrolling: touch;
         }
 
         .app-store {
             padding: 25px;
-        }
+        
+    max-height: 100%;
+    overflow-y: auto;
+}
 
         .app-list {
             display: grid;
@@ -514,7 +517,7 @@
             draggedWindow: null,
             dragOffset: { x: 0, y: 0 },
             touchStart: { x: 0, y: 0 },
-            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+            isTouchDevice: 'ontouchstart' in window || navigator.maxTouchPoints > 0
         };
 
         // Initialize the OS
@@ -530,7 +533,7 @@
             updateDesktopIcons();
             
             // Add event listeners for touch and mouse
-            if (OS.isMobile) {
+            if (OS.isTouchDevice) {
                 document.addEventListener('touchstart', handleGlobalTouchStart, { passive: false });
                 document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
                 document.addEventListener('touchend', handleGlobalTouchEnd, { passive: false });
