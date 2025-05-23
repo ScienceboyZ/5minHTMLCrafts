@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minesweeper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        #game {
+            display: grid;
+            grid-template-columns: repeat(10, 30px);
+            grid-template-rows: repeat(10, 30px);
+            gap: 2px;
+            margin: 20px auto;
+            width: 320px;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            background-color: #ccc;
+            border: 1px solid #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .cell.revealed {
+            background-color: #eee;
+            cursor: default;
+        }
+
+        .cell.mine {
+            background-color: red;
+        }
+
+        .cell.flag {
+            background-color: green;
+        }
+
+        .cell.confirmed {
+            background-color: darkred;
+            color: white;
+        }
+
+        .buttons {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 5px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        .button.active {
+            background-color: #ffb3b3; /* Red for bomb marker */
+        }
+
+        .button.active-flag {
+            background-color: #b3d9ff; /* Blue for flag marker */
+        }
+
+        .button.active-shovel {
+            background-color: #b3ffb3; /* Green for shovel marker */
+        }
+    </style>
+</head>
+<body>
+    <h1>Minesweeper</h1>
+    <div class="buttons">
+        <button class="button" onclick="setMarker('flag')">Flag Marker (🚩)</button>
+        <button class="button" onclick="setMarker('bomb')">Bomb Marker (💣)</button>
+        <button class="button" onclick="setMarker('shovel')">Shovel Marker (⛏️)</button>
+    </div>
+    <div id="game"></div>
+    <button onclick="resetGame()">Restart</button>
+
+    <script>
+        const rows = 10;
+        const cols = 10;
+        const mineCount = 15;
+        let board = [];
+        let gameOver = false;
+        let currentMarker = 'shovel'; // Default to shovel marker
+
+        function createBoard() {
+            board = [];
+            gameOver = false;
+            document.getElementById("game").innerHTML = "";
+            
+            for (let r = 0; r < rows; r++) {
+                let row = [];
+                for (let c = 0; c < cols; c++) {
+                    row.push({ mine: false, revealed: false, flagged: false, confirmed: false, count: 0 });
+                }
+                board.push(row);
+            }
+
+            placeMines();
+            calculateNumbers();
+            drawBoard();
+        }
+
+        function placeMines() {
+            let placed = 0;
+            while (placed < mineCount) {
+                let r = Math.floor(Math.random() * rows);
+                let c = Math.floor(Math.random() * cols);
+                if (!board[r][c].mine) {
+                    board[r][c].mine = true;
+                    placed++;
+                }
+            }
+        }
+
+        function calculateNumbers() {
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (board[r][c].mine) continue;
+                    let count = 0;
+
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            let nr = r + dr, nc = c + dc;
+                            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && board[nr][nc].mine) {
+                                count++;
+                            }
+                        }
+                    }
+
+                    board[r][c].count = count;
+                }
+            }
+        }
+
+        function drawBoard() {
+            const game = document.getElementById("game");
+            
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    cell.addEventListener("click", handleCellClick);
+                    game.appendChild(cell);
+                }
+            }
+        }
+
+        function handleCellClick(event) {
+            if (gameOver) return;
+
+            const r = parseInt(event.target.dataset.row);
+            const c = parseInt(event.target.dataset.col);
+            const cell = board[r][c];
+            const cellDiv = event.target;
+
+            if (currentMarker === 'shovel') {
+                if (cell.revealed || cell.flagged) return;
+
+                cell.revealed = true;
+                cellDiv.classList.add("revealed");
+
+                if (cell.mine) {
+                    cellDiv.classList.add("mine");
+                    cellDiv.innerText = "💣";
+                    endGame(false);
+                } else {
+                    if (cell.count > 0) {
+                        cellDiv.innerText = cell.count;
+                    } else {
+                        revealAdjacent(r, c);
+                    }
+                }
+                checkWin();
+            } else if (currentMarker === 'flag') {
+                // Flag marker logic
+                cell.flagged = !cell.flagged;
+                if (cell.flagged) {
+                    cellDiv.classList.add("flag");
+                    cellDiv.innerText = "🚩"; // Flag icon
+                } else {
+                    cellDiv.classList.remove("flag");
+                    cellDiv.innerText = ""; // Clear the text if unflagged
+                }
+            } else if (currentMarker === 'bomb') {
+                // Bomb marker logic
+                cell.confirmed = !cell.confirmed;
+                if (cell.confirmed) {
+                    cellDiv.classList.add("confirmed");
+                    cellDiv.classList.add("bomb");
+                    cellDiv.innerText = "💣"; // Bomb icon
+                } else {
+                    cellDiv.classList.remove("confirmed");
+                    cellDiv.classList.remove("bomb");
+                    cellDiv.innerText = ""; // Clear the text if unmarked
+                }
+            }
+
+            checkWin();
+        }
+
+        function revealAdjacent(r, c) {
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    let nr = r + dr, nc = c + dc;
+                    if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !board[nr][nc].revealed) {
+                        const cellDiv = document.querySelector(`[data-row="${nr}"][data-col="${nc}"]`);
+                        handleCellClick({ target: cellDiv });
+                    }
+                }
+            }
+        }
+
+        function checkWin() {
+            let correctFlags = 0;
+            let revealedTiles = 0;
+            let totalSafeTiles = rows * cols - mineCount;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const cell = board[r][c];
+                    if (cell.revealed) revealedTiles++;
+                    if (cell.mine && cell.confirmed) correctFlags++;
+                }
+            }
+
+            if (correctFlags === mineCount && revealedTiles === totalSafeTiles) {
+                endGame(true);
+            }
+        }
+
+        function endGame(win) {
+            gameOver = true;
+            alert(win ? "You win!" : "Game over!");
+            revealAll();
+        }
+
+        function revealAll() {
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    const cellDiv = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                    const cell = board[r][c];
+                    if (cell.mine) {
+                        cellDiv.innerText = "💣";
+                        cellDiv.classList.add("mine");
+                    } else if (cell.count > 0) {
+                        cellDiv.innerText = cell.count;
+                    }
+                    cellDiv.classList.add("revealed");
+                }
+            }
+        }
+
+        function resetGame() {
+            createBoard();
+        }
+
+        function setMarker(marker) {
+            currentMarker = marker;
+            document.querySelectorAll('.button').forEach(btn => btn.classList.remove('active', 'active-flag', 'active-shovel'));
+            if (marker === 'flag') {
+                document.querySelector('button[onclick="setMarker(\'flag\')"]').classList.add('active-flag');
+            } else if (marker === 'bomb') {
+                document.querySelector('button[onclick="setMarker(\'bomb\')"]').classList.add('active');
+            } else if (marker === 'shovel') {
+                document.querySelector('button[onclick="setMarker(\'shovel\')"]').classList.add('active-shovel');
+            }
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
