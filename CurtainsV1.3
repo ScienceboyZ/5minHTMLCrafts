@@ -36,7 +36,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 80px;
+            height: 60px;
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(10px);
             display: flex;
@@ -137,7 +137,7 @@
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
             min-width: 320px;
             min-height: 400px;
-            z-index: 1000;
+            z-index: 15000;
             overflow: hidden;
             transition: transform 0.3s ease;
             touch-action: none;
@@ -497,6 +497,9 @@
         <div class="taskbar-apps" id="taskbar-apps">
             <!-- Running apps will appear here -->
         </div>
+        <div class="start-menu" onclick="refreshAllWindows()" style="margin-left: auto;">
+            🔄 Refresh
+        </div>
     </div>
 
     <script>
@@ -760,8 +763,17 @@
             const window = document.createElement('div');
             window.className = 'window';
             window.id = id;
-            window.style.left = Math.random() * (window.innerWidth - 400) + 'px';
-            window.style.top = Math.random() * (window.innerHeight - 400) + 'px';
+            
+            // Calculate safe positioning for mobile (avoid taskbar area)
+            const maxWidth = Math.min(window.innerWidth - 40, 400);
+            const maxHeight = Math.min(window.innerHeight - 160, 500);
+            const x = Math.max(20, Math.random() * (window.innerWidth - maxWidth - 40));
+            const y = Math.max(20, Math.random() * (window.innerHeight - maxHeight - 160));
+            
+            window.style.left = x + 'px';
+            window.style.top = y + 'px';
+            window.style.width = maxWidth + 'px';
+            window.style.height = maxHeight + 'px';
             window.style.zIndex = ++OS.nextZIndex;
 
             window.innerHTML = `
@@ -1050,6 +1062,34 @@
         // Start menu functionality
         function showStartMenu() {
             alert('Start menu - Feature coming soon!');
+        }
+
+        // Refresh all windows positioning
+        function refreshAllWindows() {
+            const centerX = (window.innerWidth / 2) - 200;
+            const centerY = (window.innerHeight / 2) - 250;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            OS.windows.forEach((windowElement) => {
+                // Position windows in a cascade from center
+                windowElement.style.left = Math.max(20, centerX + offsetX) + 'px';
+                windowElement.style.top = Math.max(20, centerY + offsetY) + 'px';
+                windowElement.style.zIndex = ++OS.nextZIndex;
+                
+                // Remove minimized state if present
+                windowElement.classList.remove('minimized');
+                
+                // Offset for next window
+                offsetX += 30;
+                offsetY += 30;
+                
+                // Reset offset if going off screen
+                if (centerX + offsetX > window.innerWidth - 400 || centerY + offsetY > window.innerHeight - 400) {
+                    offsetX = 0;
+                    offsetY = 0;
+                }
+            });
         }
 
         // Initialize the OS when page loads
