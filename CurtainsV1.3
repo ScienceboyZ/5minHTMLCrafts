@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML OS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .desktop {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 50px);
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+        }
+
+        .taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            z-index: 10000;
+        }
+
+        .start-menu {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 8px 15px;
+            color: white;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background 0.3s;
+        }
+
+        .start-menu:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .taskbar-apps {
+            display: flex;
+            gap: 5px;
+            flex: 1;
+        }
+
+        .taskbar-app {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .taskbar-app:hover,
+        .taskbar-app.active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .desktop-icon {
+            position: absolute;
+            width: 80px;
+            height: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background 0.3s;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        .desktop-icon:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .desktop-icon .icon {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .desktop-icon .label {
+            font-size: 12px;
+            text-align: center;
+            word-wrap: break-word;
+        }
+
+        .window {
+            position: absolute;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            min-width: 400px;
+            min-height: 300px;
+            z-index: 1000;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .window.minimized {
+            transform: scale(0.1);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .window.maximized {
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: calc(100vh - 50px) !important;
+            border-radius: 0;
+        }
+
+        .window-titlebar {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+
+        .window-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 5px;
+        }
+
+        .window-control {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+        }
+
+        .window-control.minimize {
+            background: #ffbd2e;
+        }
+
+        .window-control.maximize {
+            background: #28ca42;
+        }
+
+        .window-control.close {
+            background: #ff5f56;
+        }
+
+        .window-content {
+            height: calc(100% - 50px);
+            overflow: auto;
+            background: white;
+        }
+
+        .app-store {
+            padding: 20px;
+        }
+
+        .app-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .app-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f9f9f9;
+            transition: transform 0.2s;
+        }
+
+        .app-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .app-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .app-emoji {
+            font-size: 24px;
+        }
+
+        .app-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .app-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .install-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .install-btn:hover {
+            background: #45a049;
+        }
+
+        .install-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .file-explorer {
+            padding: 20px;
+        }
+
+        .file-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .toolbar-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .toolbar-btn:hover {
+            background: #1976D2;
+        }
+
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .file-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: #f9f9f9;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .file-item:hover {
+            background: #e9e9e9;
+        }
+
+        .file-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .file-name {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .file-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .html-editor {
+            padding: 20px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .editor-input {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-textarea {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            resize: none;
+            outline: none;
+        }
+
+        .preview-frame {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 20000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .modal-btn.primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .modal-btn.secondary {
+            background: #ccc;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="desktop" id="desktop">
+        <!-- Desktop icons will be dynamically populated -->
+    </div>
+
+    <div class="taskbar">
+        <div class="start-menu" onclick="showStartMenu()">
+            🏠 Start
+        </div>
+        <div class="taskbar-apps" id="taskbar-apps">
+            <!-- Running apps will appear here -->
+        </div>
+    </div>
+
+    <script>
+        // Global state management
+        const OS = {
+            windows: new Map(),
+            runningApps: new Map(),
+            installedApps: new Map(),
+            files: new Map(),
+            nextWindowId: 1,
+            nextZIndex: 1000,
+            draggedWindow: null,
+            dragOffset: { x: 0, y: 0 }
+        };
+
+        // Initialize the OS
+        function initOS() {
+            loadInstalledApps();
+            loadFiles();
+            
+            // Install default apps if first run
+            if (OS.installedApps.size === 0) {
+                installDefaultApps();
+            }
+            
+            updateDesktopIcons();
+            
+            // Add event listeners
+            document.addEventListener('mousedown', handleGlobalMouseDown);
+            document.addEventListener('mousemove', handleGlobalMouseMove);
+            document.addEventListener('mouseup', handleGlobalMouseUp);
+        }
+
+        // Default apps installation
+        function installDefaultApps() {
+            const defaultApps = [
+                {
+                    id: 'app-store',
+                    name: 'App Store',
+                    emoji: '🛍️',
+                    description: 'Install new applications',
+                    type: 'system'
+                },
+                {
+                    id: 'file-explorer',
+                    name: 'File Explorer',
+                    emoji: '📁',
+                    description: 'Manage your files',
+                    type: 'system'
+                }
+            ];
+
+            defaultApps.forEach(app => {
+                OS.installedApps.set(app.id, app);
+            });
+            
+            saveInstalledApps();
+        }
+
+        // Storage functions
+        function saveInstalledApps() {
+            localStorage.setItem('htmlos-apps', JSON.stringify(Array.from(OS.installedApps.entries())));
+        }
+
+        function loadInstalledApps() {
+            const saved = localStorage.getItem('htmlos-apps');
+            if (saved) {
+                const apps = JSON.parse(saved);
+                OS.installedApps = new Map(apps);
+            }
+        }
+
+        function saveFiles() {
+            localStorage.setItem('htmlos-files', JSON.stringify(Array.from(OS.files.entries())));
+        }
+
+        function loadFiles() {
+            const saved = localStorage.getItem('htmlos-files');
+            if (saved) {
+                const files = JSON.parse(saved);
+                OS.files = new Map(files);
+            }
+        }
+
+        // Desktop icon management
+        function updateDesktopIcons() {
+            const desktop = document.getElementById('desktop');
+            const existingIcons = desktop.querySelectorAll('.desktop-icon');
+            existingIcons.forEach(icon => icon.remove());
+
+            let x = 20, y = 20;
+            const iconWidth = 100, iconHeight = 110;
+            const maxX = window.innerWidth - iconWidth;
+
+            OS.installedApps.forEach((app, id) => {
+                const icon = document.createElement('div');
+                icon.className = 'desktop-icon';
+                icon.style.left = x + 'px';
+                icon.style.top = y + 'px';
+                icon.onclick = () => launchApp(id);
+
+                icon.innerHTML = `
+                    <div class="icon">${app.emoji}</div>
+                    <div class="label">${app.name}</div>
+                `;
+
+                desktop.appendChild(icon);
+
+                y += iconHeight;
+                if (y > window.innerHeight - iconHeight - 100) {
+                    y = 20;
+                    x += iconWidth;
+                }
+            });
+        }
+
+        // App launching
+        function launchApp(appId) {
+            const app = OS.installedApps.get(appId);
+            if (!app) return;
+
+            // Check if app is already running
+            if (OS.runningApps.has(appId)) {
+                focusWindow(OS.runningApps.get(appId).windowId);
+                return;
+            }
+
+            const windowId = 'window-' + OS.nextWindowId++;
+            const window = createWindow(windowId, app.name, app.emoji);
+
+            // Add app-specific content
+            let content = '';
+            switch (appId) {
+                case 'app-store':
+                    content = createAppStoreContent();
+                    break;
+                case 'file-explorer':
+                    content = createFileExplorerContent();
+                    break;
+                default:
+                    if (app.htmlContent) {
+                        content = `<iframe src="data:text/html;charset=utf-8,${encodeURIComponent(app.htmlContent)}" style="width:100%;height:100%;border:none;"></iframe>`;
+                    } else if (app.htmlUrl) {
+                        content = `<iframe src="${app.htmlUrl}" style="width:100%;height:100%;border:none;"></iframe>`;
+                    } else {
+                        content = '<div style="padding:20px;">App content not available</div>';
+                    }
+                    break;
+            }
+
+            window.querySelector('.window-content').innerHTML = content;
+
+            // Register running app
+            OS.runningApps.set(appId, {
+                windowId: windowId,
+                app: app
+            });
+
+            updateTaskbar();
+
+            // Load app store data if needed
+            if (appId === 'app-store') {
+                loadAppStoreData();
+            }
+            
+            // Load file explorer data if needed
+            if (appId === 'file-explorer') {
+                updateFileList();
+            }
+        }
+
+        // Window management
+        function createWindow(id, title, emoji) {
+            const window = document.createElement('div');
+            window.className = 'window';
+            window.id = id;
+            window.style.left = '50px';
+            window.style.top = '50px';
+            window.style.width = '800px';
+            window.style.height = '600px';
+            window.style.zIndex = ++OS.nextZIndex;
+
+            window.innerHTML = `
+                <div class="window-titlebar" onmousedown="startDrag(event, '${id}')">
+                    <div class="window-title">
+                        <span>${emoji}</span>
+                        <span>${title}</span>
+                    </div>
+                    <div class="window-controls">
+                        <div class="window-control minimize" onclick="minimizeWindow('${id}')">−</div>
+                        <div class="window-control maximize" onclick="toggleMaximize('${id}')">□</div>
+                        <div class="window-control close" onclick="closeWindow('${id}')">×</div>
+                    </div>
+                </div>
+                <div class="window-content"></div>
+            `;
+
+            document.body.appendChild(window);
+            OS.windows.set(id, window);
+            return window;
+        }
+
+        function closeWindow(windowId) {
+            const window = OS.windows.get(windowId);
+            if (window) {
+                window.remove();
+                OS.windows.delete(windowId);
+                
+                // Find and remove from running apps
+                for (const [appId, appData] of OS.runningApps.entries()) {
+                    if (appData.windowId === windowId) {
+                        OS.runningApps.delete(appId);
+                        break;
+                    }
+                }
+                
+                updateTaskbar();
+            }
+        }
+
+        function minimizeWindow(windowId) {
+            const window = OS.windows.get(windowId);
+            if (window) {
+                window.classList.add('minimized');
+                updateTaskbar();
+            }
+        }
+
+        function toggleMaximize(windowId) {
+            const window = OS.windows.get(windowId);
+            if (window) {
+                window.classList.toggle('maximized');
+            }
+        }
+
+        function focusWindow(windowId) {
+            const window = OS.windows.get(windowId);
+            if (window) {
+                window.classList.remove('minimized');
+                window.style.zIndex = ++OS.nextZIndex;
+                updateTaskbar();
+            }
+        }
+
+        // Drag functionality
+        function startDrag(event, windowId) {
+            event.preventDefault();
+            const window = OS.windows.get(windowId);
+            if (window && !window.classList.contains('maximized')) {
+                OS.draggedWindow = window;
+                const rect = window.getBoundingClientRect();
+                OS.dragOffset = {
+                    x: event.clientX - rect.left,
+                    y: event.clientY - rect.top
+                };
+                window.style.zIndex = ++OS.nextZIndex;
+            }
+        }
+
+        function handleGlobalMouseDown(event) {
+            // Handle window focus
+            const window = event.target.closest('.window');
+            if (window) {
+                window.style.zIndex = ++OS.nextZIndex;
+            }
+        }
+
+        function handleGlobalMouseMove(event) {
+            if (OS.draggedWindow) {
+                const newX = event.clientX - OS.dragOffset.x;
+                const newY = event.clientY - OS.dragOffset.y;
+                
+                OS.draggedWindow.style.left = Math.max(0, Math.min(newX, window.innerWidth - 100)) + 'px';
+                OS.draggedWindow.style.top = Math.max(0, Math.min(newY, window.innerHeight - 100)) + 'px';
+            }
+        }
+
+        function handleGlobalMouseUp() {
+            OS.draggedWindow = null;
+        }
+
+        // Taskbar management
+        function updateTaskbar() {
+            const taskbarApps = document.getElementById('taskbar-apps');
+            taskbarApps.innerHTML = '';
+
+            OS.runningApps.forEach((appData, appId) => {
+                const window = OS.windows.get(appData.windowId);
+                const button = document.createElement('div');
+                button.className = 'taskbar-app';
+                
+                if (window && !window.classList.contains('minimized')) {
+                    button.classList.add('active');
+                }
+                
+                button.onclick = () => {
+                    if (window && window.classList.contains('minimized')) {
+                        focusWindow(appData.windowId);
+                    } else if (window && window.style.zIndex == OS.nextZIndex) {
+                        minimizeWindow(appData.windowId);
+                    } else {
+                        focusWindow(appData.windowId);
+                    }
+                };
+
+                button.innerHTML = `
+                    <span>${appData.app.emoji}</span>
+                    <span>${appData.app.name}</span>
+                `;
+
+                taskbarApps.appendChild(button);
+            });
+        }
+
+        // App Store functionality
+        function createAppStoreContent() {
+            return `
+                <div class="app-store">
+                    <h2>App Store</h2>
+                    <p>Discover and install new applications</p>
+                    <div id="app-store-content" class="loading">
+                        Loading apps...
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadAppStoreData() {
+            const contentDiv = document.getElementById('app-store-content');
+            if (!contentDiv) return;
+
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/refs/heads/main/Apps.html');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch app data');
+                }
+                
+                const appsText = await response.text();
+                const apps = JSON.parse(appsText);
+                displayApps(apps);
+            } catch (error) {
+                contentDiv.innerHTML = `
+                    <div class="error">
+                        <h3>Failed to load apps</h3>
+                        <p>Could not connect to the app store. Please check your internet connection.</p>
+                        <button class="install-btn" onclick="loadAppStoreData()">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function displayApps(apps) {
+            const contentDiv = document.getElementById('app-store-content');
+            if (!contentDiv) return;
+
+            contentDiv.innerHTML = `
+                <div class="app-list">
+                    ${apps.map(app => `
+                        <div class="app-item">
+                            <div class="app-header">
+                                <div class="app-emoji">${app.emoji}</div>
+                                <div class="app-name">${app.name}</div>
+                            </div>
+                            <div class="app-description">${app.description}</div>
+                            <button class="install-btn" 
+                                    onclick="installApp('${app.name}', '${app.emoji}', '${app.description}', '${app.htmlUrl}')"
+                                    ${OS.installedApps.has(generateAppId(app.name)) ? 'disabled' : ''}>
+                                ${OS.installedApps.has(generateAppId(app.name)) ? 'Installed' : 'Install'}
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        async function installApp(name, emoji, description, htmlUrl) {
+            const appId = generateAppId(name);
+            
+            if (OS.installedApps.has(appId)) {
+                return;
+            }
+
+            try {
+                const app = {
+                    id: appId,
+                    name: name,
+                    emoji: emoji,
+                    description: description,
+                    htmlUrl: htmlUrl,
+                    type: 'installed'
+                };
+
+                OS.installedApps.set(appId, app);
+                saveInstalledApps();
+                updateDesktopIcons();
+                
+                // Update the app store display
+                if (document.getElementById('app-store-content')) {
+                    loadAppStoreData();
+                }
+                
+                alert(`${name} has been installed successfully!`);
+            } catch (error) {
+                console.error('Installation error:', error);
+                alert(`Failed to install ${name}. Please try again.`);
+            }
+        }
+
+        function generateAppId(name) {
+            return name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        }
+
+        // File Explorer functionality
+        function createFileExplorerContent() {
+            return `
+                <div class="file-explorer">
+                    <div class="file-toolbar">
+                        <button class="toolbar-btn" onclick="createNewFile()">📝 New HTML File</button>
+                        <button class="toolbar-btn" onclick="refreshFileList()">🔄 Refresh</button>
+                    </div>
+                    <div id="file-list" class="file-list">
+                        <!-- Files will be populated here -->
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('file-list');
+            if (!fileList) return;
+
+            if (OS.files.size === 0) {
+                fileList.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">No files yet. Create your first HTML file!</div>';
+                return;
+            }
+
+            fileList.innerHTML = Array.from(OS.files.entries()).map(([fileName, fileData]) => `
+                <div class="file-item" onclick="openFile('${fileName}')">
+                    <div class="file-icon">📄</div>
+                    <div class="file-name">${fileName}</div>
+                    <div class="file-meta">
+                        Modified: ${new Date(fileData.modified).toLocaleDateString()}<br>
+                        Size: ${fileData.content.length} characters
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function refreshFileList() {
+            updateFileList();
+        }
+
+        function createNewFile() {
+            showModal('Create New HTML File', 'Enter filename (without .html extension):', '', (fileName) => {
+                if (fileName.trim()) {
+                    const fullFileName = fileName.trim() + '.html';
+                    const defaultContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${fileName}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to ${fileName}</h1>
+    <p>This is your new HTML file. Start editing!</p>
+</body>
+</html>`;
+
+                    OS.files.set(fullFileName, {
+                        content: defaultContent,
+                        modified: Date.now()
+                    });
+                    
+                    saveFiles();
+                    updateFileList();
+                    openFile(fullFileName);
+                }
+            });
+        }
+
+        function openFile(fileName) {
+            const fileData = OS.files.get(fileName);
+            if (!fileData) return;
+
+            const windowId = 'editor-' + OS.nextWindowId++;
+            const window = createWindow(windowId, `📝 ${fileName}`, '📝');
+
+            window.querySelector('.window-content').innerHTML = createHTMLEditorContent(fileName, fileData.content);
+        }
+
+        function createHTMLEditorContent(fileName, content) {
+            return `
+                <div class="html-editor">
+                    <div class="editor-toolbar">
+                        <button class="toolbar-btn" onclick="saveFile('${fileName}')">💾 Save</button>
+                        <button class="toolbar-btn" onclick="previewFile('${fileName}')">👁️ Preview</button>
+                        <button class="toolbar-btn" onclick="installAsApp('${fileName}')">📱 Install as App</button>
+                    </div>
+                    <div class="editor-input">
+                        <textarea id="editor-${fileName}" class="editor-textarea" placeholder="Enter your HTML code here...">${content}</textarea>
+                        <iframe id="preview-${fileName}" class="preview-frame" style="display:none;"></iframe>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveFile(fileName) {
+            const textarea = document.getElementById(`editor-${fileName}`);
+            if (textarea) {
+                OS.files.set(fileName, {
+                    content: textarea.value,
+                    modified: Date.now()
+                });
+                saveFiles();
+                updateFileList();
+                alert('File saved successfully!');
+            }
+        }
+
+        function previewFile(fileName) {
+            const textarea = document.getElementById(`editor-${fileName}`);
+            const preview = document.getElementById(`preview-${fileName}`);
+            
+            if (textarea && preview) {
+                if (preview.style.display === 'none') {
+                    const content = textarea.value;
+                    preview.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(content);
+                    preview.style.display = 'block';
+                    textarea.style.height = '50%';
+                } else {
+                    preview.style.display = 'none';
+                    textarea.style.height = '100%';
+                }
+            }
+        }
+
+        function installAsApp(fileName) {
+            const textarea = document.getElementById(`editor-${fileName}`);
+            if (!textarea) return;
+
+            const content = textarea.value;
+            const appName = fileName.replace('.html', '');
+            const appId = generateAppId(appName);
+
+            if (OS.installedApps.has(appId)) {
+                if (confirm('An app with this name already exists. Update it?')) {
+                    const existingApp = OS.installedApps.get(appId);
+                    existingApp.htmlContent = content;
+                    OS.installedApps.set(appId, existingApp);
+                }
+            } else {
+                showModal('Install as App', 'Choose an emoji for your app:', '⭐', (emoji) => {
+                    const app = {
+                        id: appId,
+                        name: appName,
+                        emoji: emoji || '⭐',
+                        description: `Custom HTML app: ${appName}`,
+                        htmlContent: content,
+                        type: 'custom'
+                    };
+
+                    OS.installedApps.set(appId, app);
+                    saveInstalledApps();
+                    updateDesktopIcons();
+                    alert(`${appName} has been installed as an app!`);
+                });
+            }
+        }
+
+        // Modal functionality
+        function showModal(title, message, defaultValue, callback) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-title">${title}</div>
+                    <p>${message}</p>
+                    <input type="text" class="modal-input" value="${defaultValue}" id="modal-input">
+                    <div class="modal-buttons">
+                        <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
+                        <button class="modal-btn primary" onclick="confirmModal()">OK</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Store callback for later use
+            window.modalCallback = callback;
+
+            // Focus input and select text
+            setTimeout(() => {
+                const input = document.getElementById('modal-input');
+                input.focus();
+                input.select();
+                
+                // Handle Enter key
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        confirmModal();
+                    } else if (e.key === 'Escape') {
+                        closeModal();
+                    }
+                });
+            }, 100);
+        }
+
+        function closeModal() {
+            const modal = document.querySelector('.modal');
+            if (modal) {
+                modal.remove();
+            }
+            window.modalCallback = null;
+        }
+
+        function confirmModal() {
+            const input = document.getElementById('modal-input');
+            const callback = window.modalCallback;
+            
+            if (callback && input) {
+                callback(input.value);
+            }
+            
+            closeModal();
+        }
+
+        // Start menu (placeholder for future enhancement)
+        function showStartMenu() {
+            // For now, just launch the app store
+            launchApp('app-store');
+        }
+
+        // Initialize the OS when page loads
+        window.addEventListener('load', initOS);
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            updateDesktopIcons();
+        });
+    </script>
+</body>
+</html>
