@@ -726,6 +726,7 @@
 
             const windowId = 'window-' + OS.nextWindowId++;
             const window = createWindow(windowId, app.name, app.emoji);
+            refreshAllWindows();
 
             // Add app-specific content
             let content = '';
@@ -977,16 +978,98 @@ const taskbarHeight = 80;
         }
 
         // File Explorer functionality
+
+        function addSelectedFileAsApp() {
+            const selected = document.querySelector('.file-item.selected');
+            if (!selected) {
+                alert("Please select a file to add as an app.");
+                return;
+            }
+
+            const fileId = selected.dataset.fileId;
+            const file = OS.files.get(fileId);
+            if (!file || !file.name.endsWith(".html")) {
+                alert("Only HTML files can be added as apps.");
+                return;
+            }
+
+            const appId = generateAppId(file.name);
+            const appName = file.name.replace(/\.html$/, '');
+            const app = {
+                id: appId,
+                name: appName,
+                emoji: "📄",
+                description: "Imported from File Explorer",
+                htmlUrl: "data:text/html;base64," + btoa(file.content),
+                type: 'installed'
+            };
+
+            OS.installedApps.set(appId, app);
+            saveInstalledApps();
+            updateDesktopIcons();
+            alert("App '" + appName + "' added to home screen.");
+        }
+function selectFileUI(element) {
+    document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+}
+
+
+function renameFile(fileId, newName) {
+    const file = OS.files.get(fileId);
+    if (!file || !newName.trim()) return;
+    file.name = newName.trim();
+    file.modified = Date.now();
+    OS.files.set(fileId, file);
+    saveFiles();
+    refreshFiles();
+    updateDesktopIcons();
+}
+
+function runFileAsApp(element) {
+    const fileId = element.dataset.fileId;
+    const file = OS.files.get(fileId);
+    if (!file || !file.name.endsWith(".html")) return;
+
+    const appId = generateAppId(file.name);
+    const appName = file.name.replace(/\\.html$/, '');
+    const app = {
+        id: appId,
+        name: appName,
+        emoji: "📄",
+        description: "Imported from File Explorer",
+        htmlUrl: "data:text/html;base64," + btoa(file.content),
+        type: 'installed'
+    };
+
+    OS.installedApps.set(appId, app);
+    saveInstalledApps();
+    updateDesktopIcons();
+    launchApp(appId);
+}
+
+function editSelectedFile() {
+    const selected = document.querySelector('.file-item.selected');
+    if (!selected) return;
+
+    const fileId = selected.dataset.fileId;
+    openFile(fileId);
+}
+
+
         function createFileExplorerContent() {
             return `
                 <div class="file-explorer">
-                    <div class="file-toolbar">
-                        <button class="toolbar-btn" onclick="createNewFile()">New File</button>
-                        <button class="toolbar-btn" onclick="refreshFiles()">Refresh</button>
-                    </div>
+<div class="file-toolbar">
+    <button class="toolbar-btn" onclick="createNewFile()">New File</button>
+    <button class="toolbar-btn" onclick="refreshFiles()">Refresh</button>
+    <button class="toolbar-btn" onclick="editSelectedFile()">Edit</button>
+    <button class="toolbar-btn" onclick="addSelectedFileAsApp()">Add App</button>
+    <button class="toolbar-btn" onclick="promptRenameFile()">Rename</button>
+</div>
                     <div class="file-list" id="file-list">
                         ${Array.from(OS.files.values()).map(file => `
-                            <div class="file-item" onclick="openFile('${file.id}')">
+<div class="file-item" data-file-id="${file.id}" ondblclick="runFileAsApp(this)">
                                 <div class="file-icon">📄</div>
                                 <div class="file-name">${file.name}</div>
                                 <div class="file-meta">Modified: ${new Date(file.modified).toLocaleDateString()}</div>
@@ -1019,7 +1102,7 @@ const taskbarHeight = 80;
             const fileList = document.getElementById('file-list');
             if (fileList) {
                 fileList.innerHTML = Array.from(OS.files.values()).map(file => `
-                    <div class="file-item" onclick="openFile('${file.id}')">
+                    <div class="file-item" data-file-id="${file.id}" onclick="openFile(\'${file.id}\')">
                         <div class="file-icon">📄</div>
                         <div class="file-name">${file.name}</div>
                         <div class="file-meta">Modified: ${new Date(file.modified).toLocaleDateString()}</div>
@@ -1079,7 +1162,20 @@ const taskbarHeight = 80;
             }
         }
 
-        // Start menu functionality
+        
+    function renameFile(fileId, newName) {
+        const file = OS.files.get(fileId);
+        if (!file || !newName.trim()) return;
+        file.name = newName.trim();
+        file.modified = Date.now();
+        OS.files.set(fileId, file);
+        saveFiles();
+        refreshFiles();
+        updateDesktopIcons();
+    }
+    
+
+// Start menu functionality
         function showStartMenu() {
             
         }
@@ -1111,10 +1207,65 @@ const taskbarHeight = 80;
                 }
             });
         }
+let currentRenameFileId = null;
+
+function openRenameModal(fileId, currentName) {
+    currentRenameFileId = fileId;
+    document.getElementById("modal-title").innerText = "Rename File";
+    document.getElementById("modal-input").value = currentName;
+    document.getElementById("custom-modal").style.display = "flex";
+}
+
+function closeModal() {
+    document.getElementById("custom-modal").style.display = "none";
+    currentRenameFileId = null;
+}
+
+function confirmRename() {
+    const input = document.getElementById("modal-input").value.trim();
+    if (!input || !currentRenameFileId) return;
+
+    const file = OS.files.get(currentRenameFileId);
+    if (file) {
+        file.name = input;
+        file.modified = Date.now();
+        OS.files.set(currentRenameFileId, file);
+        saveFiles();
+        refreshFiles();
+        updateDesktopIcons();
+    }
+    closeModal();
+}
+
+function promptRenameFile() {
+    const selected = document.querySelector('.file-item.selected');
+    if (!selected) {
+        showToast("Please select a file to rename.");
+        return;
+    }
+
+    const fileId = selected.dataset.fileId;
+    const file = OS.files.get(fileId);
+    if (!file) return;
+
+    openRenameModal(fileId, file.name);
+}
+
+
 
         // Initialize the OS when page loads
         window.addEventListener('load', initOS);
         window.addEventListener('resize', updateDesktopIcons);
     </script>
+<div id="custom-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-title" id="modal-title">Rename File</div>
+        <input type="text" class="modal-input" id="modal-input" placeholder="Enter new name">
+        <div class="modal-buttons">
+            <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
+            <button class="modal-btn primary" onclick="confirmRename()">Rename</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
