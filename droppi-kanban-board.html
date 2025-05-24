@@ -321,7 +321,31 @@ ul {
 		margin: 10px;
 	}
 }
-  </style>
+  
+@media screen and (max-width: 600px) {
+    body {
+        overflow-y: auto;
+    }
+    .drag-container {
+        margin: 0;
+    }
+    .drag-list {
+        display: block;
+    }
+    .drag-column {
+        margin: 10px;
+        width: auto;
+    }
+    .custom-scroll-todo,
+    .custom-scroll-doing,
+    .custom-scroll-done,
+    .custom-scroll {
+        max-height: unset;
+        overflow-y: visible;
+    }
+}
+
+</style>
  </head>
  <body>
   <!-- Github Corner SVG (Optional ;) ) -->
@@ -368,7 +392,31 @@ ul {
 					animation: octocat-wave 560ms ease-in-out;
 				}
 			}
-  </style>
+  
+@media screen and (max-width: 600px) {
+    body {
+        overflow-y: auto;
+    }
+    .drag-container {
+        margin: 0;
+    }
+    .drag-list {
+        display: block;
+    }
+    .drag-column {
+        margin: 10px;
+        width: auto;
+    }
+    .custom-scroll-todo,
+    .custom-scroll-doing,
+    .custom-scroll-done,
+    .custom-scroll {
+        max-height: unset;
+        overflow-y: visible;
+    }
+}
+
+</style>
   <!-- End of GitHub Corner -->
   <h1 class="main-title">
    Droppi
