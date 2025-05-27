@@ -58,5 +58,10 @@
     "emoji": "📃",
     "description": "A advanced kanban board for personal/proffesional usage",
     "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/droppi-kanban-board.html"
+  },
+  {
+    "name": "Maze Game",
+    "emoji": "🗜️",
+    "htmlUrl": "https://raw.githubusercontent.com/16Yongjin/html-games/refs/heads/master/maze.html"
   }
 ]
