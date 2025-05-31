@@ -4,6 +4,8 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0" name="viewport"/>
 <title>HTML OS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/dracula.min.css">
 <style>
         /* Base styles - unchanged from previous version */
         * {
@@ -335,18 +337,25 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            /* Ensure CodeMirror takes full available height */
+            height: calc(100% - 60px); /* Adjust based on toolbar height */
         }
 
-        .editor-textarea {
-            flex: 1;
-            border: 1px solid #ddd;
+        /* CodeMirror specific styling within the editor */
+        .CodeMirror {
+            flex-grow: 1; /* CodeMirror editor takes available space */
+            height: auto; /* Important for flexbox to work */
+            font-size: 14px; /* Adjusted for better fit in window */
+            line-height: 1.5;
+            border: 1px solid #ddd; /* Match existing textarea border */
             border-radius: 6px;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.4;
-            resize: none;
-            outline: none;
+            overflow: hidden; /* Ensure content stays within rounded corners */
+            background-color: #282a36; /* Dracula background */
+            color: #f8f8f2; /* Dracula foreground */
+        }
+        
+        .CodeMirror-scroll {
+            padding: 15px; /* Match textarea padding */
         }
 
         .preview-frame {
@@ -473,6 +482,11 @@
 <div class="taskbar-apps" id="taskbar-apps">
 </div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/htmlmixed/htmlmixed.min.js"></script>
 <script>
         // Global state management
         const OS = {
@@ -496,6 +510,9 @@
             draggedWindow: null,
             dragOffset: { x: 0, y: 0 }
         };
+
+        // Global variable to hold the current CodeMirror instance
+        let currentCodeMirrorEditor = null;
 
         // Function to get safe area insets (fallback for older browsers)
         function getSafeAreaInsets() {
@@ -1107,10 +1124,33 @@
             const windowId = 'editor-' + OS.nextWindowId++;
             const window = createWindow(windowId, `📝 ${fileName}`, '📝');
 
-            window.querySelector('.window-content').innerHTML = createHTMLEditorContent(fileName, fileData.content);
+            const contentDiv = window.querySelector('.window-content');
+            contentDiv.innerHTML = createHTMLEditorContent(fileName);
+
+            // Initialize CodeMirror after the DOM is updated
+            setTimeout(() => {
+                const editorContainer = document.getElementById(`editor-container-${fileName}`);
+                if (editorContainer) {
+                    currentCodeMirrorEditor = CodeMirror(editorContainer, {
+                        value: fileData.content,
+                        mode: 'htmlmixed',
+                        theme: 'dracula',
+                        lineNumbers: true,
+                        autoCloseTags: true,
+                        autoCloseBrackets: true,
+                        matchBrackets: true,
+                        indentUnit: 4,
+                        tabSize: 4,
+                        indentWithTabs: false,
+                        lineWrapping: true,
+                    });
+                    // Refresh CodeMirror to ensure it renders correctly after being added to a hidden/dynamic element
+                    currentCodeMirrorEditor.refresh();
+                }
+            }, 0); // Use setTimeout with 0 to defer execution until after DOM update
         }
 
-        function createHTMLEditorContent(fileName, content) {
+        function createHTMLEditorContent(fileName) {
             return `
                 <div class="html-editor">
                     <div class="editor-toolbar">
@@ -1119,7 +1159,7 @@
                         <button class="toolbar-btn" onclick="installAsApp('${fileName}')">📱 Install as App</button>
                     </div>
                     <div class="editor-input">
-                        <textarea id="editor-${fileName}" class="editor-textarea" placeholder="Enter your HTML code here...">${content}</textarea>
+                        <div id="editor-container-${fileName}" class="codemirror-container"></div>
                         <iframe id="preview-${fileName}" class="preview-frame" style="display:none;"></iframe>
                     </div>
                 </div>
@@ -1127,40 +1167,51 @@
         }
 
         function saveFile(fileName) {
-            const textarea = document.getElementById(`editor-${fileName}`);
-            if (textarea) {
+            if (currentCodeMirrorEditor) {
+                const content = currentCodeMirrorEditor.getValue();
                 OS.files.set(fileName, {
-                    content: textarea.value,
+                    content: content,
                     modified: Date.now()
                 });
                 saveFiles();
                 updateFileList();
                 alert('File saved successfully!');
+            } else {
+                console.error('CodeMirror editor not initialized.');
             }
         }
 
         function previewFile(fileName) {
-            const textarea = document.getElementById(`editor-${fileName}`);
             const preview = document.getElementById(`preview-${fileName}`);
             
-            if (textarea && preview) {
+            if (currentCodeMirrorEditor && preview) {
                 if (preview.style.display === 'none') {
-                    const content = textarea.value;
+                    const content = currentCodeMirrorEditor.getValue();
                     preview.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(content);
                     preview.style.display = 'block';
-                    textarea.style.height = '50%';
+                    // Adjust CodeMirror height when preview is visible
+                    const editorContainer = currentCodeMirrorEditor.getWrapperElement();
+                    editorContainer.style.height = 'calc(50% - 15px)'; // 15px for margin-top on iframe
+                    currentCodeMirrorEditor.refresh(); // Refresh after height change
                 } else {
                     preview.style.display = 'none';
-                    textarea.style.height = '100%';
+                    // Reset CodeMirror height when preview is hidden
+                    const editorContainer = currentCodeMirrorEditor.getWrapperElement();
+                    editorContainer.style.height = '100%';
+                    currentCodeMirrorEditor.refresh(); // Refresh after height change
                 }
+            } else {
+                console.error('CodeMirror editor or preview frame not found.');
             }
         }
 
         function installAsApp(fileName) {
-            const textarea = document.getElementById(`editor-${fileName}`);
-            if (!textarea) return;
+            if (!currentCodeMirrorEditor) {
+                console.error('CodeMirror editor not initialized.');
+                return;
+            }
 
-            const content = textarea.value;
+            const content = currentCodeMirrorEditor.getValue();
             const appName = fileName.replace('.html', '');
             const appId = generateAppId(appName);
 
@@ -1253,7 +1304,6 @@
 
         function loadCustomizationSettings() {
             document.getElementById('textColor').value = OS.settings.textColor;
-            // For desktop background, if it's an image, set color picker to black or transparent
             const desktopBgInput = document.getElementById('desktopBackgroundColor');
             if (OS.settings.desktopBackground && OS.settings.desktopBackground.startsWith('#')) {
                  desktopBgInput.value = OS.settings.desktopBackground;
@@ -1262,7 +1312,8 @@
             }
             document.getElementById('windowBorderColor').value = OS.settings.windowBorderColor;
             document.getElementById('taskbarColor').value = OS.settings.taskbarColor;
-            document.getElementById('titlebarColor').value = OS.settings.titlebarColor.startsWith('#') ? OS.settings.titlebarColor : '#4CAF50'; // Default if linear-gradient
+            // For titlebarColor, if it's a gradient, set a default color for the picker
+            document.getElementById('titlebarColor').value = OS.settings.titlebarColor.startsWith('#') ? OS.settings.titlebarColor : '#4CAF50'; 
             document.getElementById('titlebarTextColor').value = OS.settings.titlebarTextColor;
             document.getElementById('windowBg').value = OS.settings.windowBg;
             document.getElementById('windowContentBg').value = OS.settings.windowContentBg;
