@@ -198,16 +198,18 @@
             gap: 5px;
         }
 
+        /* Enlarged buttons for better touch target */
         .window-control {
-            width: 16px;
-            height: 16px;
+            width: 30px; /* Increased from 16px */
+            height: 30px; /* Increased from 16px */
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 18px; /* Increased font size for better visibility */
             color: white;
+            transition: background 0.2s; /* Added transition for hover/active states */
         }
 
         .window-control.minimize {
@@ -220,6 +222,10 @@
 
         .window-control.close {
             background: #ff5f56;
+        }
+
+        .window-control:active {
+            filter: brightness(85%); /* Visual feedback on tap/click */
         }
 
         .window-content {
@@ -620,7 +626,7 @@
         }
 
         // App launching
-        function launchApp(appId) {
+        async function launchApp(appId) { // Made async to allow fetch
             const app = OS.installedApps.get(appId);
             if (!app) return;
 
@@ -633,27 +639,35 @@
             const windowId = 'window-' + OS.nextWindowId++;
             const window = createWindow(windowId, app.name, app.emoji);
 
-            // Add app-specific content
-            let content = '';
-            switch (appId) {
-                case 'app-store':
-                    content = createAppStoreContent();
-                    break;
-                case 'file-explorer':
-                    content = createFileExplorerContent();
-                    break;
-                default:
-                    if (app.htmlContent) {
-                        content = `<iframe src="data:text/html;charset=utf-8,${encodeURIComponent(app.htmlContent)}" style="width:100%;height:100%;border:none;"></iframe>`;
-                    } else if (app.htmlUrl) {
-                        content = `<iframe src="${app.htmlUrl}" style="width:100%;height:100%;border:none;"></iframe>`;
-                    } else {
-                        content = '<div style="padding:20px;">App content not available</div>';
-                    }
-                    break;
-            }
+            const windowContentDiv = window.querySelector('.window-content');
+            windowContentDiv.innerHTML = '<div class="loading">Loading app...</div>'; // Show loading indicator
 
-            window.querySelector('.window-content').innerHTML = content;
+            try {
+                let finalContentHtml = '';
+                if (app.htmlContent) { // This is for apps installed via HTML Editor
+                    finalContentHtml = app.htmlContent;
+                } else if (app.htmlUrl) { // This is for apps from the App Store
+                    const response = await fetch(app.htmlUrl);
+                    if (!response.ok) {
+                        throw new Error(`Failed to load app from ${app.htmlUrl}: ${response.statusText || response.status}`);
+                    }
+                    finalContentHtml = await response.text();
+                } else {
+                    windowContentDiv.innerHTML = '<div class="error">App content not available</div>';
+                    return;
+                }
+
+                // Embed the content into a data URL iframe
+                const encodedContent = encodeURIComponent(finalContentHtml);
+                windowContentDiv.innerHTML = `<iframe src="data:text/html;charset=utf-8,${encodedContent}" style="width:100%;height:100%;border:none;"></iframe>`;
+
+            } catch (error) {
+                console.error('Error loading app content:', error);
+                windowContentDiv.innerHTML = `<div class="error">
+                    <h3>Error loading app</h3>
+                    <p>${error.message || 'Could not load app content. This might be due to security restrictions or network issues.'}</p>
+                </div>`;
+            }
 
             // Register running app
             OS.runningApps.set(appId, {
