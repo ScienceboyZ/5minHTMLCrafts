@@ -70,11 +70,5 @@
     "emoji": "🥵",
     "description": "A bit about us",
     "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/AboutUs.html"
-  },
-  {
-    "name": "Code IDE",
-    "emoji": "🧑‍💻",
-    "description": "A html editor for people who want to get developing",
-    "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/IDE.html"
   }
 ]
