@@ -494,11 +494,12 @@
         // Function to get safe area insets (fallback for older browsers)
         function getSafeAreaInsets() {
             const bodyStyle = getComputedStyle(document.body);
+            // Try to get values from env() first, then fallback to padding
             return {
-                top: parseFloat(bodyStyle.paddingTop) || 0,
-                right: parseFloat(bodyStyle.paddingRight) || 0,
-                bottom: parseFloat(bodyStyle.paddingBottom) || 0,
-                left: parseFloat(bodyStyle.paddingLeft) || 0
+                top: parseFloat(bodyStyle.getPropertyValue('padding-top')) || 0,
+                right: parseFloat(bodyStyle.getPropertyValue('padding-right')) || 0,
+                bottom: parseFloat(bodyStyle.getPropertyValue('padding-bottom')) || 0,
+                left: parseFloat(bodyStyle.getPropertyValue('padding-left')) || 0
             };
         }
 
@@ -695,9 +696,15 @@
                         <span>${title}</span>
                     </div>
                     <div class="window-controls">
-                        <div class="window-control minimize" onclick="minimizeWindow('${id}')">−</div>
-                        <div class="window-control maximize" onclick="toggleMaximize('${id}')">□</div>
-                        <div class="window-control close" onclick="closeWindow('${id}')">×</div>
+                        <div class="window-control minimize" 
+                             onclick="event.stopPropagation(); minimizeWindow('${id}')" 
+                             ontouchend="event.stopPropagation(); minimizeWindow('${id}')">−</div>
+                        <div class="window-control maximize" 
+                             onclick="event.stopPropagation(); toggleMaximize('${id}')" 
+                             ontouchend="event.stopPropagation(); toggleMaximize('${id}')">□</div>
+                        <div class="window-control close" 
+                             onclick="event.stopPropagation(); closeWindow('${id}')" 
+                             ontouchend="event.stopPropagation(); closeWindow('${id}')">×</div>
                     </div>
                 </div>
                 <div class="window-content"></div>
@@ -752,6 +759,10 @@
 
         // Drag functionality
         function startDrag(event, windowId) {
+            // Only prevent default if it's not a button click within the titlebar
+            if (event.target.closest('.window-control')) {
+                return; // Let the button handle its own event
+            }
             event.preventDefault(); // Prevent default touch behaviors like scrolling/zooming
             const window = OS.windows.get(windowId);
             if (window && !window.classList.contains('maximized')) {
@@ -815,10 +826,10 @@
             if (window) {
                 window.style.zIndex = ++OS.nextZIndex;
             }
-             // Call startDrag if the touch is on a window titlebar
+             // Call startDrag if the touch is on a window titlebar, but not on a control button
             if (event.target.closest('.window-titlebar')) {
                 const windowId = event.target.closest('.window').id;
-                startDrag(event, windowId);
+                startDrag(event, windowId); // This call now handles the button check internally
             }
         }
 
