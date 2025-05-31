@@ -5,49 +5,42 @@
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0" name="viewport"/>
 <title>HTML OS</title>
 <style>
+        /* Base styles - unchanged from previous version */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            /* Consider border-box for all elements for consistent sizing */
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* Default background */
             height: 100vh;
             overflow: hidden;
             user-select: none;
-            /* Prevent text selection on touch devices */
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             -khtml-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
-
-            /* Add padding for safe areas, especially for the bottom home indicator */
-            padding-bottom: constant(safe-area-inset-bottom); /* iOS 11-13 */
-            padding-bottom: env(safe-area-inset-bottom); /* iOS 11.2+ */
+            padding-bottom: constant(safe-area-inset-bottom);
+            padding-bottom: env(safe-area-inset-bottom);
             padding-left: constant(safe-area-inset-left);
             padding-left: env(safe-area-inset-left);
             padding-right: constant(safe-area-inset-right);
             padding-right: env(safe-area-inset-right);
+            /* Customization properties */
+            color: var(--text-color, white); /* Default text color */
         }
 
         .desktop {
             position: relative;
-            /* Calculate height accounting for taskbar and safe areas */
-            height: calc(100vh - 50px - constant(safe-area-inset-bottom) - env(safe-area-inset-bottom));
-            height: calc(100vh - 50px - env(safe-area-inset-bottom)); /* Fallback for older iOS versions */
-            width: 100%;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-            /* Adjust positioning to account for safe areas */
-            left: constant(safe-area-inset-left);
-            left: env(safe-area-inset-left);
-            width: calc(100% - constant(safe-area-inset-left) - constant(safe-area-inset-right));
+            height: calc(100vh - 50px - env(safe-area-inset-bottom));
             width: calc(100% - env(safe-area-inset-left) - env(safe-area-inset-right));
-            top: constant(safe-area-inset-top);
             top: env(safe-area-inset-top);
+            background: var(--desktop-background, url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>')); /* Default desktop background */
+            background-size: cover;
+            background-position: center;
         }
 
         .taskbar {
@@ -56,28 +49,24 @@
             left: 0;
             right: 0;
             height: 50px;
-            background: rgba(0, 0, 0, 0.8);
+            background: var(--taskbar-color, rgba(0, 0, 0, 0.8)); /* Default taskbar color */
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
             padding: 0 10px;
             z-index: 10000;
-            /* Adjust bottom position to respect safe area */
-            bottom: constant(safe-area-inset-bottom);
             bottom: env(safe-area-inset-bottom);
-            /* Adjust horizontal padding to respect safe areas */
-            padding-left: calc(10px + constant(safe-area-inset-left));
             padding-left: calc(10px + env(safe-area-inset-left));
-            padding-right: calc(10px + constant(safe-area-inset-right));
             padding-right: calc(10px + env(safe-area-inset-right));
-            width: 100vw; /* Ensure it spans the full viewport width */
+            width: 100vw;
+            border-top: 1px solid var(--window-border-color, rgba(255, 255, 255, 0.2)); /* Taskbar border based on window border */
         }
 
         .start-menu {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 8px;
             padding: 8px 15px;
-            color: white;
+            color: var(--text-color, white);
             cursor: pointer;
             margin-right: 10px;
             transition: background 0.3s;
@@ -97,7 +86,7 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 6px;
             padding: 8px 12px;
-            color: white;
+            color: var(--text-color, white);
             cursor: pointer;
             transition: background 0.3s;
             font-size: 12px;
@@ -122,7 +111,7 @@
             padding: 10px;
             border-radius: 8px;
             transition: background 0.3s;
-            color: white;
+            color: var(--text-color, white);
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
         }
 
@@ -143,7 +132,7 @@
 
         .window {
             position: absolute;
-            background: white;
+            background: var(--window-bg, white); /* Default window background */
             border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             min-width: 400px;
@@ -151,11 +140,9 @@
             z-index: 1000;
             overflow: hidden;
             transition: transform 0.3s ease;
-            /* Ensure window can't be dragged into safe areas */
-            max-width: calc(100vw - constant(safe-area-inset-left) - constant(safe-area-inset-right));
             max-width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right));
-            max-height: calc(100vh - 50px - constant(safe-area-inset-top) - constant(safe-area-inset-bottom));
             max-height: calc(100vh - 50px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+            border: 1px solid var(--window-border-color, #ccc); /* Default window border */
         }
 
         .window.minimized {
@@ -165,20 +152,16 @@
         }
 
         .window.maximized {
-            top: constant(safe-area-inset-top) !important;
             top: env(safe-area-inset-top) !important;
-            left: constant(safe-area-inset-left) !important;
             left: env(safe-area-inset-left) !important;
-            width: calc(100vw - constant(safe-area-inset-left) - constant(safe-area-inset-right)) !important;
             width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right)) !important;
-            height: calc(100vh - 50px - constant(safe-area-inset-top) - constant(safe-area-inset-bottom)) !important;
             height: calc(100vh - 50px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
             border-radius: 0;
         }
 
         .window-titlebar {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
+            background: var(--titlebar-color, linear-gradient(135deg, #4CAF50, #45a049)); /* Default titlebar color */
+            color: var(--titlebar-text-color, white); /* Default titlebar text color */
             padding: 10px 15px;
             display: flex;
             justify-content: space-between;
@@ -198,18 +181,17 @@
             gap: 5px;
         }
 
-        /* Enlarged buttons for better touch target */
         .window-control {
-            width: 30px; /* Increased from 16px */
-            height: 30px; /* Increased from 16px */
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px; /* Increased font size for better visibility */
+            font-size: 18px;
             color: white;
-            transition: background 0.2s; /* Added transition for hover/active states */
+            transition: background 0.2s;
         }
 
         .window-control.minimize {
@@ -225,16 +207,17 @@
         }
 
         .window-control:active {
-            filter: brightness(85%); /* Visual feedback on tap/click */
+            filter: brightness(85%);
         }
 
         .window-content {
             height: calc(100% - 50px);
             overflow: auto;
-            background: white;
+            background: var(--window-content-bg, white); /* Default window content background */
+            color: var(--window-content-text-color, #333); /* Default window content text color */
         }
 
-        .app-store {
+        .app-store, .file-explorer, .html-editor, .customization-app {
             padding: 20px;
         }
 
@@ -280,7 +263,7 @@
             line-height: 1.4;
         }
 
-        .install-btn {
+        .install-btn, .toolbar-btn {
             background: #4CAF50;
             color: white;
             border: none;
@@ -291,7 +274,7 @@
             transition: background 0.3s;
         }
 
-        .install-btn:hover {
+        .install-btn:hover, .toolbar-btn:hover {
             background: #45a049;
         }
 
@@ -300,30 +283,12 @@
             cursor: not-allowed;
         }
 
-        .file-explorer {
-            padding: 20px;
-        }
-
-        .file-toolbar {
+        .file-toolbar, .editor-toolbar {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 1px solid #ddd;
-        }
-
-        .toolbar-btn {
-            background: #2196F3;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .toolbar-btn:hover {
-            background: #1976D2;
         }
 
         .file-list {
@@ -361,18 +326,9 @@
         }
 
         .html-editor {
-            padding: 20px;
             height: 100%;
             display: flex;
             flex-direction: column;
-        }
-
-        .editor-toolbar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #ddd;
         }
 
         .editor-input {
@@ -472,6 +428,39 @@
             padding: 40px;
             color: #f44336;
         }
+
+        /* Customization App specific styles */
+        .customization-option {
+            margin-bottom: 15px;
+        }
+
+        .customization-option label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--window-content-text-color, #333);
+        }
+
+        .customization-option input[type="color"],
+        .customization-option input[type="file"],
+        .customization-option select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: var(--window-content-bg, white); /* Ensure input background matches window content */
+            color: var(--window-content-text-color, #333);
+        }
+        
+        .customization-option input[type="file"] {
+            padding: 5px; /* Adjust padding for file input */
+        }
+        
+        .customization-option button {
+            margin-top: 10px;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -491,6 +480,17 @@
             runningApps: new Map(),
             installedApps: new Map(),
             files: new Map(),
+            settings: {
+                textColor: 'white',
+                desktopBackground: '', // Can be a color or URL
+                windowBorderColor: '#ccc',
+                taskbarColor: 'rgba(0, 0, 0, 0.8)',
+                titlebarColor: 'linear-gradient(135deg, #4CAF50, #45a049)',
+                titlebarTextColor: 'white',
+                windowBg: 'white',
+                windowContentBg: 'white',
+                windowContentTextColor: '#333'
+            },
             nextWindowId: 1,
             nextZIndex: 1000,
             draggedWindow: null,
@@ -500,7 +500,6 @@
         // Function to get safe area insets (fallback for older browsers)
         function getSafeAreaInsets() {
             const bodyStyle = getComputedStyle(document.body);
-            // Try to get values from env() first, then fallback to padding
             return {
                 top: parseFloat(bodyStyle.getPropertyValue('padding-top')) || 0,
                 right: parseFloat(bodyStyle.getPropertyValue('padding-right')) || 0,
@@ -509,9 +508,10 @@
             };
         }
 
-
         // Initialize the OS
         function initOS() {
+            loadSettings(); // Load settings first
+            applySettings(); // Apply settings to CSS variables
             loadInstalledApps();
             loadFiles();
             
@@ -548,6 +548,13 @@
                     emoji: '📁',
                     description: 'Manage your files',
                     type: 'system'
+                },
+                {
+                    id: 'customization',
+                    name: 'Customization',
+                    emoji: '🎨',
+                    description: 'Personalize your OS',
+                    type: 'system'
                 }
             ];
 
@@ -582,6 +589,32 @@
                 OS.files = new Map(files);
             }
         }
+        
+        function saveSettings() {
+            localStorage.setItem('htmlos-settings', JSON.stringify(OS.settings));
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('htmlos-settings');
+            if (saved) {
+                // Merge saved settings with default settings to ensure new properties are added
+                OS.settings = { ...OS.settings, ...JSON.parse(saved) };
+            }
+        }
+
+        // Apply settings to CSS custom properties
+        function applySettings() {
+            const root = document.documentElement;
+            root.style.setProperty('--text-color', OS.settings.textColor);
+            root.style.setProperty('--desktop-background', OS.settings.desktopBackground || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
+            root.style.setProperty('--window-border-color', OS.settings.windowBorderColor);
+            root.style.setProperty('--taskbar-color', OS.settings.taskbarColor);
+            root.style.setProperty('--titlebar-color', OS.settings.titlebarColor);
+            root.style.setProperty('--titlebar-text-color', OS.settings.titlebarTextColor);
+            root.style.setProperty('--window-bg', OS.settings.windowBg);
+            root.style.setProperty('--window-content-bg', OS.settings.windowContentBg);
+            root.style.setProperty('--window-content-text-color', OS.settings.windowContentTextColor);
+        }
 
         // Desktop icon management
         function updateDesktopIcons() {
@@ -590,13 +623,12 @@
             existingIcons.forEach(icon => icon.remove());
 
             const insets = getSafeAreaInsets();
-            let x = 20 + insets.left; // Start icons further from left edge
-            let y = 20 + insets.top;  // Start icons further from top edge
+            let x = 20 + insets.left;
+            let y = 20 + insets.top;
 
             const iconWidth = 100, iconHeight = 110;
-            // Adjust max X and Y to respect safe areas and taskbar
             const maxX = window.innerWidth - iconWidth - insets.right;
-            const maxY = window.innerHeight - iconHeight - 50 - insets.bottom; // 50 for taskbar
+            const maxY = window.innerHeight - iconHeight - 50 - insets.bottom;
 
             OS.installedApps.forEach((app, id) => {
                 const icon = document.createElement('div');
@@ -613,20 +645,19 @@
                 desktop.appendChild(icon);
 
                 y += iconHeight;
-                if (y > maxY) { // Check against new maxY
-                    y = 20 + insets.top; // Reset y with top inset
+                if (y > maxY) {
+                    y = 20 + insets.top;
                     x += iconWidth;
                 }
-                if (x > maxX) { // Prevent icons from going off right edge
-                    // This scenario means no more room, or a new column should start far left
-                    // For simplicity, we'll just stop adding icons if it goes off-screen
-                    // A more robust solution might wrap to a new column on the left
+                if (x > maxX) {
+                    // Out of space, stop adding icons
+                    return; 
                 }
             });
         }
 
         // App launching
-        async function launchApp(appId) { // Made async to allow fetch
+        async function launchApp(appId) {
             const app = OS.installedApps.get(appId);
             if (!app) return;
 
@@ -640,22 +671,27 @@
             const window = createWindow(windowId, app.name, app.emoji);
 
             const windowContentDiv = window.querySelector('.window-content');
-            windowContentDiv.innerHTML = '<div class="loading">Loading app...</div>'; // Show loading indicator
+            windowContentDiv.innerHTML = '<div class="loading">Loading app...</div>';
 
             try {
                 let finalContentHtml = '';
                 if (app.id === 'app-store') {
                     finalContentHtml = createAppStoreContent();
                     windowContentDiv.innerHTML = finalContentHtml;
-                    loadAppStoreData(); // Load app store data after content is in DOM
+                    loadAppStoreData();
                 } else if (app.id === 'file-explorer') {
                     finalContentHtml = createFileExplorerContent();
                     windowContentDiv.innerHTML = finalContentHtml;
-                    updateFileList(); // Update file list after content is in DOM
-                } else if (app.htmlContent) { // This is for apps installed via HTML Editor
+                    updateFileList();
+                } else if (app.id === 'customization') {
+                    finalContentHtml = createCustomizationContent();
+                    windowContentDiv.innerHTML = finalContentHtml;
+                    loadCustomizationSettings(); // Populate form with current settings
+                }
+                else if (app.htmlContent) {
                     const encodedContent = encodeURIComponent(app.htmlContent);
                     windowContentDiv.innerHTML = `<iframe src="data:text/html;charset=utf-8,${encodedContent}" style="width:100%;height:100%;border:none;"></iframe>`;
-                } else if (app.htmlUrl) { // This is for apps from the App Store
+                } else if (app.htmlUrl) {
                     const response = await fetch(app.htmlUrl);
                     if (!response.ok) {
                         throw new Error(`Failed to load app from ${app.htmlUrl}: ${response.statusText || response.status}`);
@@ -675,7 +711,6 @@
                 </div>`;
             }
 
-            // Register running app
             OS.runningApps.set(appId, {
                 windowId: windowId,
                 app: app
@@ -690,7 +725,6 @@
             window.className = 'window';
             window.id = id;
             
-            // Initial position, adjusted for safe areas
             const insets = getSafeAreaInsets();
             window.style.left = (50 + insets.left) + 'px';
             window.style.top = (50 + insets.top) + 'px';
@@ -731,7 +765,6 @@
                 window.remove();
                 OS.windows.delete(windowId);
                 
-                // Find and remove from running apps
                 for (const [appId, appData] of OS.runningApps.entries()) {
                     if (appData.windowId === windowId) {
                         OS.runningApps.delete(appId);
@@ -769,11 +802,10 @@
 
         // Drag functionality
         function startDrag(event, windowId) {
-            // Only prevent default if it's not a button click within the titlebar
             if (event.target.closest('.window-control')) {
-                return; // Let the button handle its own event
+                return;
             }
-            event.preventDefault(); // Prevent default touch behaviors like scrolling/zooming
+            event.preventDefault();
             const window = OS.windows.get(windowId);
             if (window && !window.classList.contains('maximized')) {
                 OS.draggedWindow = window;
@@ -797,7 +829,6 @@
         }
 
         function handleGlobalMouseDown(event) {
-            // Handle window focus
             const window = event.target.closest('.window');
             if (window) {
                 window.style.zIndex = ++OS.nextZIndex;
@@ -813,13 +844,11 @@
                 let newX = clientX - OS.dragOffset.x;
                 let newY = clientY - OS.dragOffset.y;
                 
-                // Set boundaries for X position respecting safe areas
-                newX = Math.max(insets.left, newX); // Prevent going off left edge
-                newX = Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth - insets.right); // Prevent going off right edge
+                newX = Math.max(insets.left, newX);
+                newX = Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth - insets.right);
 
-                // Set boundaries for Y position (considering taskbar and safe areas)
-                newY = Math.max(insets.top, newY); // Prevent going off top edge
-                newY = Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50 - insets.bottom); // Prevent going off bottom edge (above taskbar and bottom inset)
+                newY = Math.max(insets.top, newY);
+                newY = Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50 - insets.bottom);
                 
                 OS.draggedWindow.style.left = newX + 'px';
                 OS.draggedWindow.style.top = newY + 'px';
@@ -831,21 +860,19 @@
         }
 
         function handleGlobalTouchStart(event) {
-            // Handle window focus
             const window = event.target.closest('.window');
             if (window) {
                 window.style.zIndex = ++OS.nextZIndex;
             }
-             // Call startDrag if the touch is on a window titlebar, but not on a control button
             if (event.target.closest('.window-titlebar')) {
                 const windowId = event.target.closest('.window').id;
-                startDrag(event, windowId); // This call now handles the button check internally
+                startDrag(event, windowId);
             }
         }
 
         function handleGlobalTouchMove(event) {
-            if (OS.draggedWindow && event.touches.length === 1) { // Only drag with one finger
-                event.preventDefault(); // Prevent scrolling while dragging
+            if (OS.draggedWindow && event.touches.length === 1) {
+                event.preventDefault();
                 const insets = getSafeAreaInsets();
                 const clientX = event.touches[0].clientX;
                 const clientY = event.touches[0].clientY;
@@ -853,13 +880,11 @@
                 let newX = clientX - OS.dragOffset.x;
                 let newY = clientY - OS.dragOffset.y;
                 
-                // Set boundaries for X position respecting safe areas
-                newX = Math.max(insets.left, newX); // Prevent going off left edge
-                newX = Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth - insets.right); // Prevent going off right edge
+                newX = Math.max(insets.left, newX);
+                newX = Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth - insets.right);
 
-                // Set boundaries for Y position (considering taskbar and safe areas)
-                newY = Math.max(insets.top, newY); // Prevent going off top edge
-                newY = Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50 - insets.bottom); // Prevent going off bottom edge (above taskbar and bottom inset)
+                newY = Math.max(insets.top, newY);
+                newY = Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50 - insets.bottom);
                 
                 OS.draggedWindow.style.left = newX + 'px';
                 OS.draggedWindow.style.top = newY + 'px';
@@ -985,7 +1010,6 @@
                 saveInstalledApps();
                 updateDesktopIcons();
                 
-                // Update the app store display
                 if (document.getElementById('app-store-content')) {
                     loadAppStoreData();
                 }
@@ -1143,7 +1167,7 @@
             if (OS.installedApps.has(appId)) {
                 if (confirm('An app with this name already exists. Update it?')) {
                     const existingApp = OS.installedApps.get(appId);
-                    existingApp.htmlContent = content; // Update HTML content for existing app
+                    existingApp.htmlContent = content;
                     OS.installedApps.set(appId, existingApp);
                     saveInstalledApps();
                     updateDesktopIcons();
@@ -1168,6 +1192,124 @@
             }
         }
 
+        // Customization App functionality
+        function createCustomizationContent() {
+            return `
+                <div class="customization-app">
+                    <h2>🎨 Customization</h2>
+                    <p>Personalize the look and feel of your OS.</p>
+
+                    <div class="customization-option">
+                        <label for="textColor">Global Text Color:</label>
+                        <input type="color" id="textColor" onchange="updateCustomization('textColor', this.value)">
+                    </div>
+
+                    <div class="customization-option">
+                        <label for="desktopBackground">Desktop Background:</label>
+                        <input type="color" id="desktopBackgroundColor" value="${OS.settings.desktopBackground.startsWith('#') ? OS.settings.desktopBackground : ''}" onchange="updateCustomization('desktopBackground', this.value)">
+                        <input type="file" id="desktopBackgroundImage" accept="image/*" onchange="handleBackgroundImageUpload(event)">
+                        <button class="toolbar-btn" onclick="clearBackgroundImage()">Clear Image</button>
+                    </div>
+
+                    <div class="customization-option">
+                        <label for="windowBorderColor">Window Border Color:</label>
+                        <input type="color" id="windowBorderColor" onchange="updateCustomization('windowBorderColor', this.value)">
+                    </div>
+
+                    <div class="customization-option">
+                        <label for="taskbarColor">Taskbar Color:</label>
+                        <input type="color" id="taskbarColor" onchange="updateCustomization('taskbarColor', this.value)">
+                    </div>
+
+                    <div class="customization-option">
+                        <label for="titlebarColor">Window Titlebar Color:</label>
+                        <input type="color" id="titlebarColor" onchange="updateCustomization('titlebarColor', this.value)">
+                    </div>
+
+                    <div class="customization-option">
+                        <label for="titlebarTextColor">Window Titlebar Text Color:</label>
+                        <input type="color" id="titlebarTextColor" onchange="updateCustomization('titlebarTextColor', this.value)">
+                    </div>
+
+                    <div class="customization-option">
+                        <label for="windowBg">Window Background:</label>
+                        <input type="color" id="windowBg" onchange="updateCustomization('windowBg', this.value)">
+                    </div>
+
+                    <div class="customization-option">
+                        <label for="windowContentBg">Window Content Background:</label>
+                        <input type="color" id="windowContentBg" onchange="updateCustomization('windowContentBg', this.value)">
+                    </div>
+
+                    <div class="customization-option">
+                        <label for="windowContentTextColor">Window Content Text Color:</label>
+                        <input type="color" id="windowContentTextColor" onchange="updateCustomization('windowContentTextColor', this.value)">
+                    </div>
+
+                    <button class="install-btn" onclick="resetCustomization()">Reset to Defaults</button>
+                </div>
+            `;
+        }
+
+        function loadCustomizationSettings() {
+            document.getElementById('textColor').value = OS.settings.textColor;
+            // For desktop background, if it's an image, set color picker to black or transparent
+            const desktopBgInput = document.getElementById('desktopBackgroundColor');
+            if (OS.settings.desktopBackground && OS.settings.desktopBackground.startsWith('#')) {
+                 desktopBgInput.value = OS.settings.desktopBackground;
+            } else {
+                 desktopBgInput.value = '#000000'; // Or any default color when image is set
+            }
+            document.getElementById('windowBorderColor').value = OS.settings.windowBorderColor;
+            document.getElementById('taskbarColor').value = OS.settings.taskbarColor;
+            document.getElementById('titlebarColor').value = OS.settings.titlebarColor.startsWith('#') ? OS.settings.titlebarColor : '#4CAF50'; // Default if linear-gradient
+            document.getElementById('titlebarTextColor').value = OS.settings.titlebarTextColor;
+            document.getElementById('windowBg').value = OS.settings.windowBg;
+            document.getElementById('windowContentBg').value = OS.settings.windowContentBg;
+            document.getElementById('windowContentTextColor').value = OS.settings.windowContentTextColor;
+        }
+
+        function updateCustomization(key, value) {
+            OS.settings[key] = value;
+            saveSettings();
+            applySettings();
+        }
+
+        function handleBackgroundImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    updateCustomization('desktopBackground', `url('${e.target.result}')`);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearBackgroundImage() {
+            updateCustomization('desktopBackground', ''); // Clear background image, revert to default color/gradient
+            document.getElementById('desktopBackgroundImage').value = ''; // Clear file input
+        }
+
+        function resetCustomization() {
+            // Reset to hardcoded defaults or initial state
+            OS.settings = {
+                textColor: 'white',
+                desktopBackground: '', // This will revert to the CSS default linear-gradient
+                windowBorderColor: '#ccc',
+                taskbarColor: 'rgba(0, 0, 0, 0.8)',
+                titlebarColor: 'linear-gradient(135deg, #4CAF50, #45a049)',
+                titlebarTextColor: 'white',
+                windowBg: 'white',
+                windowContentBg: 'white',
+                windowContentTextColor: '#333'
+            };
+            saveSettings();
+            applySettings();
+            loadCustomizationSettings(); // Update the form inputs
+            alert('Customization reset to defaults!');
+        }
+
         // Modal functionality
         function showModal(title, message, defaultValue, callback) {
             const modal = document.createElement('div');
@@ -1186,16 +1328,13 @@
 
             document.body.appendChild(modal);
 
-            // Store callback for later use
             window.modalCallback = callback;
 
-            // Focus input and select text
             setTimeout(() => {
                 const input = document.getElementById('modal-input');
                 input.focus();
                 input.select();
                 
-                // Handle Enter key
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         confirmModal();
