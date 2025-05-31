@@ -64,5 +64,11 @@
     "emoji": "🗜️",
     "description": "A simple ish maze game",
     "htmlUrl": "https://raw.githubusercontent.com/16Yongjin/html-games/refs/heads/master/maze.html"
+  },
+  {
+    "name": "About Us!",
+    "emoji": "🥵",
+    "description": "A bit about "us"",
+    "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/AboutUs.html"
   }
 ]
