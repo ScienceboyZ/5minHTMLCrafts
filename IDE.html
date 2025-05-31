@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Code IDE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/dracula.min.css">
+    <style>
+        /* General styling for the page */
+        body {
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #282a36; /* Dracula background */
+            color: #f8f8f2; /* Dracula foreground */
+        }
+
+        /* Header styling */
+        .header {
+            background-color: #44475a;
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            border-bottom: 2px solid #6272a4;
+            border-radius: 0 0 8px 8px; /* Rounded bottom corners */
+        }
+
+        /* Main container for editor and preview */
+        .container {
+            display: flex;
+            flex-grow: 1; /* Allows container to take available space */
+            overflow: hidden; /* Prevents scrollbars on container */
+            padding: 10px;
+            gap: 10px; /* Space between editor and preview */
+        }
+
+        /* Editor and Preview panels */
+        .editor-panel, .preview-panel {
+            flex: 1; /* Both take equal width */
+            display: flex;
+            flex-direction: column;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Panel titles */
+        .panel-title {
+            background-color: #6272a4;
+            color: #f8f8f2;
+            padding: 10px 15px;
+            font-weight: bold;
+            border-bottom: 1px solid #44475a;
+        }
+
+        /* CodeMirror specific styling */
+        .CodeMirror {
+            flex-grow: 1; /* CodeMirror editor takes available space */
+            height: auto; /* Important for flexbox to work */
+            font-size: 16px;
+            line-height: 1.5;
+            border-radius: 0 0 8px 8px; /* Rounded bottom corners for editor */
+            overflow: hidden; /* Ensure content stays within rounded corners */
+        }
+
+        /* Preview iframe styling */
+        .preview-iframe {
+            flex-grow: 1; /* Iframe takes available space */
+            width: 100%;
+            border: none;
+            background-color: white; /* Default background for preview */
+            border-radius: 0 0 8px 8px; /* Rounded bottom corners for preview */
+        }
+
+        /* Button styling */
+        .run-button {
+            background-color: #50fa7b; /* Green */
+            color: #282a36;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-top: 10px;
+            align-self: center; /* Center the button */
+        }
+
+        .run-button:hover {
+            background-color: #69ff94;
+            transform: translateY(-2px);
+        }
+
+        .run-button:active {
+            background-color: #3dbe5e;
+            transform: translateY(0);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column; /* Stack editor and preview vertically on small screens */
+                padding: 5px;
+                gap: 5px;
+            }
+
+            .header {
+                font-size: 1.2em;
+                padding: 10px;
+            }
+
+            .panel-title {
+                padding: 8px 10px;
+            }
+
+            .CodeMirror, .preview-iframe {
+                min-height: 300px; /* Ensure some height when stacked */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        HTML Code Editor
+    </div>
+
+    <div class="container">
+        <div class="editor-panel">
+            <div class="panel-title">Code Editor</div>
+            <textarea id="html-editor"></textarea>
+            <button class="run-button" onclick="runCode()">Run Code</button>
+        </div>
+        <div class="preview-panel">
+            <div class="panel-title">Preview</div>
+            <iframe id="preview-frame" class="preview-iframe"></iframe>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/htmlmixed/htmlmixed.min.js"></script>
+
+    <script>
+        let editor; // Declare editor globally
+
+        // Initialize CodeMirror when the window loads
+        window.onload = function() {
+            const defaultHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Awesome Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            animation: fadeIn 1s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            color: #007bff;
+        }
+        p {
+            margin-top: 15px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Hello from your IDE!</h1>
+        <p>Start writing your HTML, CSS, and JavaScript here.</p>
+        <button onclick="alert('Button clicked!')" style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin-top: 20px;">Click Me</button>
+    </div>
+</body>
+</html>`;
+
+            editor = CodeMirror.fromTextArea(document.getElementById('html-editor'), {
+                mode: 'htmlmixed', // Enable HTML, CSS, and JS highlighting
+                theme: 'dracula',   // Use the dracula theme
+                lineNumbers: true,  // Show line numbers
+                autoCloseTags: true, // Automatically close HTML tags
+                autoCloseBrackets: true, // Automatically close brackets
+                matchBrackets: true, // Highlight matching brackets
+                indentUnit: 4,      // Indent by 4 spaces
+                tabSize: 4,         // Tab key inserts 4 spaces
+                indentWithTabs: false, // Use spaces instead of tabs
+                lineWrapping: true, // Wrap long lines
+                extraKeys: {
+                    "F11": function(cm) {
+                        cm.setOption("fullScreen", !cm.getOption("fullScreen"));
+                    },
+                    "Esc": function(cm) {
+                        if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
+                    }
+                }
+            });
+
+            // Set default HTML content
+            editor.setValue(defaultHtml);
+
+            // Run code initially
+            runCode();
+        };
+
+        // Function to render the code in the preview iframe
+        function runCode() {
+            const code = editor.getValue();
+            const iframe = document.getElementById('preview-frame');
+            // Use data URL to display the HTML content
+            iframe.srcdoc = code;
+        }
+    </script>
+</body>
+</html>
