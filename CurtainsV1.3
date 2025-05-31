@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" name="viewport"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0" name="viewport"/>
 <title>HTML OS</title>
 <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            /* Consider border-box for all elements for consistent sizing */
         }
 
         body {
@@ -23,13 +24,30 @@
             -khtml-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
+
+            /* Add padding for safe areas, especially for the bottom home indicator */
+            padding-bottom: constant(safe-area-inset-bottom); /* iOS 11-13 */
+            padding-bottom: env(safe-area-inset-bottom); /* iOS 11.2+ */
+            padding-left: constant(safe-area-inset-left);
+            padding-left: env(safe-area-inset-left);
+            padding-right: constant(safe-area-inset-right);
+            padding-right: env(safe-area-inset-right);
         }
 
         .desktop {
             position: relative;
+            /* Calculate height accounting for taskbar and safe areas */
+            height: calc(100vh - 50px - constant(safe-area-inset-bottom) - env(safe-area-inset-bottom));
+            height: calc(100vh - 50px - env(safe-area-inset-bottom)); /* Fallback for older iOS versions */
             width: 100%;
-            height: calc(100vh - 50px);
             background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            /* Adjust positioning to account for safe areas */
+            left: constant(safe-area-inset-left);
+            left: env(safe-area-inset-left);
+            width: calc(100% - constant(safe-area-inset-left) - constant(safe-area-inset-right));
+            width: calc(100% - env(safe-area-inset-left) - env(safe-area-inset-right));
+            top: constant(safe-area-inset-top);
+            top: env(safe-area-inset-top);
         }
 
         .taskbar {
@@ -44,6 +62,15 @@
             align-items: center;
             padding: 0 10px;
             z-index: 10000;
+            /* Adjust bottom position to respect safe area */
+            bottom: constant(safe-area-inset-bottom);
+            bottom: env(safe-area-inset-bottom);
+            /* Adjust horizontal padding to respect safe areas */
+            padding-left: calc(10px + constant(safe-area-inset-left));
+            padding-left: calc(10px + env(safe-area-inset-left));
+            padding-right: calc(10px + constant(safe-area-inset-right));
+            padding-right: calc(10px + env(safe-area-inset-right));
+            width: 100vw; /* Ensure it spans the full viewport width */
         }
 
         .start-menu {
@@ -124,6 +151,11 @@
             z-index: 1000;
             overflow: hidden;
             transition: transform 0.3s ease;
+            /* Ensure window can't be dragged into safe areas */
+            max-width: calc(100vw - constant(safe-area-inset-left) - constant(safe-area-inset-right));
+            max-width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+            max-height: calc(100vh - 50px - constant(safe-area-inset-top) - constant(safe-area-inset-bottom));
+            max-height: calc(100vh - 50px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
         }
 
         .window.minimized {
@@ -133,10 +165,14 @@
         }
 
         .window.maximized {
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: calc(100vh - 50px) !important;
+            top: constant(safe-area-inset-top) !important;
+            top: env(safe-area-inset-top) !important;
+            left: constant(safe-area-inset-left) !important;
+            left: env(safe-area-inset-left) !important;
+            width: calc(100vw - constant(safe-area-inset-left) - constant(safe-area-inset-right)) !important;
+            width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right)) !important;
+            height: calc(100vh - 50px - constant(safe-area-inset-top) - constant(safe-area-inset-bottom)) !important;
+            height: calc(100vh - 50px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
             border-radius: 0;
         }
 
@@ -455,6 +491,18 @@
             dragOffset: { x: 0, y: 0 }
         };
 
+        // Function to get safe area insets (fallback for older browsers)
+        function getSafeAreaInsets() {
+            const bodyStyle = getComputedStyle(document.body);
+            return {
+                top: parseFloat(bodyStyle.paddingTop) || 0,
+                right: parseFloat(bodyStyle.paddingRight) || 0,
+                bottom: parseFloat(bodyStyle.paddingBottom) || 0,
+                left: parseFloat(bodyStyle.paddingLeft) || 0
+            };
+        }
+
+
         // Initialize the OS
         function initOS() {
             loadInstalledApps();
@@ -534,9 +582,14 @@
             const existingIcons = desktop.querySelectorAll('.desktop-icon');
             existingIcons.forEach(icon => icon.remove());
 
-            let x = 20, y = 20;
+            const insets = getSafeAreaInsets();
+            let x = 20 + insets.left; // Start icons further from left edge
+            let y = 20 + insets.top;  // Start icons further from top edge
+
             const iconWidth = 100, iconHeight = 110;
-            const maxX = window.innerWidth - iconWidth;
+            // Adjust max X and Y to respect safe areas and taskbar
+            const maxX = window.innerWidth - iconWidth - insets.right;
+            const maxY = window.innerHeight - iconHeight - 50 - insets.bottom; // 50 for taskbar
 
             OS.installedApps.forEach((app, id) => {
                 const icon = document.createElement('div');
@@ -553,9 +606,14 @@
                 desktop.appendChild(icon);
 
                 y += iconHeight;
-                if (y > window.innerHeight - iconHeight - 100) {
-                    y = 20;
+                if (y > maxY) { // Check against new maxY
+                    y = 20 + insets.top; // Reset y with top inset
                     x += iconWidth;
+                }
+                if (x > maxX) { // Prevent icons from going off right edge
+                    // This scenario means no more room, or a new column should start far left
+                    // For simplicity, we'll just stop adding icons if it goes off-screen
+                    // A more robust solution might wrap to a new column on the left
                 }
             });
         }
@@ -620,8 +678,12 @@
             const window = document.createElement('div');
             window.className = 'window';
             window.id = id;
-            window.style.left = '50px';
-            window.style.top = '50px';
+            
+            // Initial position, adjusted for safe areas
+            const insets = getSafeAreaInsets();
+            window.style.left = (50 + insets.left) + 'px';
+            window.style.top = (50 + insets.top) + 'px';
+            
             window.style.width = '800px';
             window.style.height = '600px';
             window.style.zIndex = ++OS.nextZIndex;
@@ -723,19 +785,20 @@
 
         function handleGlobalMouseMove(event) {
             if (OS.draggedWindow) {
+                const insets = getSafeAreaInsets();
                 let clientX = event.clientX;
                 let clientY = event.clientY;
                 
                 let newX = clientX - OS.dragOffset.x;
                 let newY = clientY - OS.dragOffset.y;
                 
-                // Set boundaries for X position
-                newX = Math.max(0, newX); // Prevent going off left edge
-                newX = Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth); // Prevent going off right edge
+                // Set boundaries for X position respecting safe areas
+                newX = Math.max(insets.left, newX); // Prevent going off left edge
+                newX = Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth - insets.right); // Prevent going off right edge
 
-                // Set boundaries for Y position (considering taskbar)
-                newY = Math.max(0, newY); // Prevent going off top edge
-                newY = Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50); // Prevent going off bottom edge (above taskbar)
+                // Set boundaries for Y position (considering taskbar and safe areas)
+                newY = Math.max(insets.top, newY); // Prevent going off top edge
+                newY = Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50 - insets.bottom); // Prevent going off bottom edge (above taskbar and bottom inset)
                 
                 OS.draggedWindow.style.left = newX + 'px';
                 OS.draggedWindow.style.top = newY + 'px';
@@ -762,19 +825,20 @@
         function handleGlobalTouchMove(event) {
             if (OS.draggedWindow && event.touches.length === 1) { // Only drag with one finger
                 event.preventDefault(); // Prevent scrolling while dragging
+                const insets = getSafeAreaInsets();
                 const clientX = event.touches[0].clientX;
                 const clientY = event.touches[0].clientY;
                 
                 let newX = clientX - OS.dragOffset.x;
                 let newY = clientY - OS.dragOffset.y;
                 
-                // Set boundaries for X position
-                newX = Math.max(0, newX); // Prevent going off left edge
-                newX = Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth); // Prevent going off right edge
+                // Set boundaries for X position respecting safe areas
+                newX = Math.max(insets.left, newX); // Prevent going off left edge
+                newX = Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth - insets.right); // Prevent going off right edge
 
-                // Set boundaries for Y position (considering taskbar)
-                newY = Math.max(0, newY); // Prevent going off top edge
-                newY = Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50); // Prevent going off bottom edge (above taskbar)
+                // Set boundaries for Y position (considering taskbar and safe areas)
+                newY = Math.max(insets.top, newY); // Prevent going off top edge
+                newY = Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50 - insets.bottom); // Prevent going off bottom edge (above taskbar and bottom inset)
                 
                 OS.draggedWindow.style.left = newX + 'px';
                 OS.draggedWindow.style.top = newY + 'px';
