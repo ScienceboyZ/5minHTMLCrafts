@@ -644,23 +644,29 @@
 
             try {
                 let finalContentHtml = '';
-                if (app.htmlContent) { // This is for apps installed via HTML Editor
-                    finalContentHtml = app.htmlContent;
+                if (app.id === 'app-store') {
+                    finalContentHtml = createAppStoreContent();
+                    windowContentDiv.innerHTML = finalContentHtml;
+                    loadAppStoreData(); // Load app store data after content is in DOM
+                } else if (app.id === 'file-explorer') {
+                    finalContentHtml = createFileExplorerContent();
+                    windowContentDiv.innerHTML = finalContentHtml;
+                    updateFileList(); // Update file list after content is in DOM
+                } else if (app.htmlContent) { // This is for apps installed via HTML Editor
+                    const encodedContent = encodeURIComponent(app.htmlContent);
+                    windowContentDiv.innerHTML = `<iframe src="data:text/html;charset=utf-8,${encodedContent}" style="width:100%;height:100%;border:none;"></iframe>`;
                 } else if (app.htmlUrl) { // This is for apps from the App Store
                     const response = await fetch(app.htmlUrl);
                     if (!response.ok) {
                         throw new Error(`Failed to load app from ${app.htmlUrl}: ${response.statusText || response.status}`);
                     }
                     finalContentHtml = await response.text();
+                    const encodedContent = encodeURIComponent(finalContentHtml);
+                    windowContentDiv.innerHTML = `<iframe src="data:text/html;charset=utf-8,${encodedContent}" style="width:100%;height:100%;border:none;"></iframe>`;
                 } else {
                     windowContentDiv.innerHTML = '<div class="error">App content not available</div>';
                     return;
                 }
-
-                // Embed the content into a data URL iframe
-                const encodedContent = encodeURIComponent(finalContentHtml);
-                windowContentDiv.innerHTML = `<iframe src="data:text/html;charset=utf-8,${encodedContent}" style="width:100%;height:100%;border:none;"></iframe>`;
-
             } catch (error) {
                 console.error('Error loading app content:', error);
                 windowContentDiv.innerHTML = `<div class="error">
@@ -676,16 +682,6 @@
             });
 
             updateTaskbar();
-
-            // Load app store data if needed
-            if (appId === 'app-store') {
-                loadAppStoreData();
-            }
-            
-            // Load file explorer data if needed
-            if (appId === 'file-explorer') {
-                updateFileList();
-            }
         }
 
         // Window management
@@ -1147,8 +1143,11 @@
             if (OS.installedApps.has(appId)) {
                 if (confirm('An app with this name already exists. Update it?')) {
                     const existingApp = OS.installedApps.get(appId);
-                    existingApp.htmlContent = content;
+                    existingApp.htmlContent = content; // Update HTML content for existing app
                     OS.installedApps.set(appId, existingApp);
+                    saveInstalledApps();
+                    updateDesktopIcons();
+                    alert(`${appName} app updated successfully!`);
                 }
             } else {
                 showModal('Install as App', 'Choose an emoji for your app:', '⭐', (emoji) => {
@@ -1240,36 +1239,5 @@
             updateDesktopIcons();
         });
     </script>
-
-<script>
-// This part of the script is separate and seems to be for a different AppLauncher/WindowManager
-// It's not directly integrated with the main OS object and functions above.
-// If you want File Explorer to behave like other apps and use the same windowing system,
-// you should remove this section and ensure the `file-explorer` case in `launchApp` is sufficient.
-/*
-AppLauncher.registerApp({
-  id: 'file-explorer',
-  name: 'File Explorer',
-  icon: 'icons/folder.png',
-  launch() {
-    const win = WindowManager.createWindow({
-      title: 'File Explorer',
-      width: 1100,
-      height: 750,
-      resizable: true,
-      fullscreenable: true
-    });
-
-    const iframe = document.createElement('iframe');
-    iframe.src = 'PPPERFECT.html';  // Ensure this file is in the same folder
-    iframe.style.width = '100%';
-    iframe.style.height = '100%';
-    iframe.style.border = 'none';
-
-    win.setContent(iframe);
-  }
-});
-*/
-</script>
 </body>
 </html>
