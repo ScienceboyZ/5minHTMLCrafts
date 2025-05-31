@@ -726,11 +726,19 @@
                 let clientX = event.clientX;
                 let clientY = event.clientY;
                 
-                const newX = clientX - OS.dragOffset.x;
-                const newY = clientY - OS.dragOffset.y;
+                let newX = clientX - OS.dragOffset.x;
+                let newY = clientY - OS.dragOffset.y;
                 
-                OS.draggedWindow.style.left = Math.max(0, Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth)) + 'px';
-                OS.draggedWindow.style.top = Math.max(0, Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50)) + 'px'; // -50 for taskbar
+                // Set boundaries for X position
+                newX = Math.max(0, newX); // Prevent going off left edge
+                newX = Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth); // Prevent going off right edge
+
+                // Set boundaries for Y position (considering taskbar)
+                newY = Math.max(0, newY); // Prevent going off top edge
+                newY = Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50); // Prevent going off bottom edge (above taskbar)
+                
+                OS.draggedWindow.style.left = newX + 'px';
+                OS.draggedWindow.style.top = newY + 'px';
             }
         }
 
@@ -757,11 +765,19 @@
                 const clientX = event.touches[0].clientX;
                 const clientY = event.touches[0].clientY;
                 
-                const newX = clientX - OS.dragOffset.x;
-                const newY = clientY - OS.dragOffset.y;
+                let newX = clientX - OS.dragOffset.x;
+                let newY = clientY - OS.dragOffset.y;
                 
-                OS.draggedWindow.style.left = Math.max(0, Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth)) + 'px';
-                OS.draggedWindow.style.top = Math.max(0, Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50)) + 'px'; // -50 for taskbar
+                // Set boundaries for X position
+                newX = Math.max(0, newX); // Prevent going off left edge
+                newX = Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth); // Prevent going off right edge
+
+                // Set boundaries for Y position (considering taskbar)
+                newY = Math.max(0, newY); // Prevent going off top edge
+                newY = Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50); // Prevent going off bottom edge (above taskbar)
+                
+                OS.draggedWindow.style.left = newX + 'px';
+                OS.draggedWindow.style.top = newY + 'px';
             }
         }
 
