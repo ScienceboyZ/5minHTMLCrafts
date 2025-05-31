@@ -1,33 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Curtains</title>
-    <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" name="viewport"/>
+<title>HTML OS</title>
+<style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             height: 100vh;
             overflow: hidden;
             user-select: none;
+            /* Prevent text selection on touch devices */
+            -webkit-touch-callout: none;
             -webkit-user-select: none;
-            touch-action: manipulation;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         .desktop {
             position: relative;
             width: 100%;
-            height: calc(100vh - 80px);
+            height: calc(100vh - 50px);
             background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
         }
 
@@ -36,28 +37,23 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 60px;
+            height: 50px;
             background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
-            padding: 0 15px;
+            padding: 0 10px;
             z-index: 10000;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .start-menu {
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 12px 20px;
+            border-radius: 8px;
+            padding: 8px 15px;
             color: white;
             cursor: pointer;
-            margin-right: 15px;
+            margin-right: 10px;
             transition: background 0.3s;
-            font-size: 16px;
-            min-height: 48px;
-            display: flex;
-            align-items: center;
         }
 
         .start-menu:hover {
@@ -66,31 +62,21 @@
 
         .taskbar-apps {
             display: flex;
-            gap: 8px;
+            gap: 5px;
             flex: 1;
-            overflow-x: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-
-        .taskbar-apps::-webkit-scrollbar {
-            display: none;
         }
 
         .taskbar-app {
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 12px 16px;
+            border-radius: 6px;
+            padding: 8px 12px;
             color: white;
             cursor: pointer;
             transition: background 0.3s;
-            font-size: 14px;
+            font-size: 12px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            min-width: 120px;
-            white-space: nowrap;
-            min-height: 48px;
+            gap: 5px;
         }
 
         .taskbar-app:hover,
@@ -100,18 +86,17 @@
 
         .desktop-icon {
             position: absolute;
-            width: 90px;
-            height: 110px;
+            width: 80px;
+            height: 90px;
             display: flex;
             flex-direction: column;
             align-items: center;
             cursor: pointer;
-            padding: 15px;
-            border-radius: 12px;
+            padding: 10px;
+            border-radius: 8px;
             transition: background 0.3s;
             color: white;
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
-            touch-action: manipulation;
         }
 
         .desktop-icon:hover {
@@ -119,28 +104,26 @@
         }
 
         .desktop-icon .icon {
-            font-size: 36px;
-            margin-bottom: 8px;
+            font-size: 32px;
+            margin-bottom: 5px;
         }
 
         .desktop-icon .label {
-            font-size: 13px;
+            font-size: 12px;
             text-align: center;
             word-wrap: break-word;
-            line-height: 1.2;
         }
 
         .window {
             position: absolute;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
-            min-width: 320px;
-            min-height: 400px;
-            z-index: 15000;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            min-width: 400px;
+            min-height: 300px;
+            z-index: 1000;
             overflow: hidden;
             transition: transform 0.3s ease;
-            touch-action: none;
         }
 
         .window.minimized {
@@ -153,46 +136,42 @@
             top: 0 !important;
             left: 0 !important;
             width: 100vw !important;
-            height: calc(100vh - 80px) !important;
+            height: calc(100vh - 50px) !important;
             border-radius: 0;
         }
 
         .window-titlebar {
             background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
-            padding: 15px 20px;
+            padding: 10px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: move;
-            min-height: 60px;
-            touch-action: none;
         }
 
         .window-title {
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 16px;
+            gap: 8px;
         }
 
         .window-controls {
             display: flex;
-            gap: 8px;
+            gap: 5px;
         }
 
         .window-control {
-            width: 24px;
-            height: 24px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 10px;
             color: white;
-            touch-action: manipulation;
         }
 
         .window-control.minimize {
@@ -208,30 +187,26 @@
         }
 
         .window-content {
-            height: calc(100% - 60px);
-            overflow-y: auto; overflow-x: hidden;
+            height: calc(100% - 50px);
+            overflow: auto;
             background: white;
-            -webkit-overflow-scrolling: touch;
         }
 
         .app-store {
-            padding: 25px;
-        
-    max-height: 100%;
-    overflow-y: auto;
-}
+            padding: 20px;
+        }
 
         .app-list {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            margin-top: 25px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
         }
 
         .app-item {
             border: 1px solid #ddd;
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 8px;
+            padding: 15px;
             background: #f9f9f9;
             transition: transform 0.2s;
         }
@@ -244,37 +219,34 @@
         .app-header {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-bottom: 15px;
+            gap: 10px;
+            margin-bottom: 10px;
         }
 
         .app-emoji {
-            font-size: 32px;
+            font-size: 24px;
         }
 
         .app-name {
             font-weight: 600;
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .app-description {
             color: #666;
-            margin-bottom: 20px;
-            line-height: 1.5;
-            font-size: 16px;
+            margin-bottom: 15px;
+            line-height: 1.4;
         }
 
         .install-btn {
             background: #4CAF50;
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             transition: background 0.3s;
-            min-height: 48px;
-            width: 100%;
         }
 
         .install-btn:hover {
@@ -287,27 +259,25 @@
         }
 
         .file-explorer {
-            padding: 25px;
+            padding: 20px;
         }
 
         .file-toolbar {
             display: flex;
-            gap: 12px;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
             border-bottom: 1px solid #ddd;
-            flex-wrap: wrap;
         }
 
         .toolbar-btn {
             background: #2196F3;
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
-            min-height: 48px;
+            font-size: 14px;
         }
 
         .toolbar-btn:hover {
@@ -316,14 +286,14 @@
 
         .file-list {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 15px;
         }
 
         .file-item {
             border: 1px solid #ddd;
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 8px;
+            padding: 15px;
             background: #f9f9f9;
             cursor: pointer;
             transition: background 0.3s;
@@ -334,23 +304,22 @@
         }
 
         .file-icon {
-            font-size: 28px;
-            margin-bottom: 10px;
+            font-size: 24px;
+            margin-bottom: 8px;
         }
 
         .file-name {
             font-weight: 500;
-            margin-bottom: 8px;
-            font-size: 16px;
+            margin-bottom: 5px;
         }
 
         .file-meta {
-            font-size: 14px;
+            font-size: 12px;
             color: #666;
         }
 
         .html-editor {
-            padding: 25px;
+            padding: 20px;
             height: 100%;
             display: flex;
             flex-direction: column;
@@ -358,11 +327,10 @@
 
         .editor-toolbar {
             display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
             border-bottom: 1px solid #ddd;
-            flex-wrap: wrap;
         }
 
         .editor-input {
@@ -374,22 +342,21 @@
         .editor-textarea {
             flex: 1;
             border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-            font-size: 16px;
-            line-height: 1.5;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
             resize: none;
             outline: none;
-            min-height: 300px;
         }
 
         .preview-frame {
             width: 100%;
             height: 300px;
             border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-top: 20px;
+            border-radius: 6px;
+            margin-top: 15px;
         }
 
         .modal {
@@ -403,45 +370,43 @@
             align-items: center;
             justify-content: center;
             z-index: 20000;
-            padding: 20px;
         }
 
         .modal-content {
             background: white;
-            border-radius: 12px;
-            padding: 25px;
+            border-radius: 8px;
+            padding: 20px;
             max-width: 400px;
-            width: 100%;
+            width: 90%;
         }
 
         .modal-title {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .modal-input {
             width: 100%;
-            padding: 15px;
+            padding: 10px;
             border: 1px solid #ddd;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 16px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
         }
 
         .modal-buttons {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             justify-content: flex-end;
         }
 
         .modal-btn {
-            padding: 12px 24px;
+            padding: 8px 16px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
-            min-height: 48px;
+            font-size: 14px;
         }
 
         .modal-btn.primary {
@@ -458,61 +423,26 @@
             text-align: center;
             padding: 40px;
             color: #666;
-            font-size: 16px;
         }
 
         .error {
             text-align: center;
             padding: 40px;
             color: #f44336;
-            font-size: 16px;
-        }
-
-        
-.file-item.selected {
-    background-color: #cce5ff;
-    font-weight: bold;
-}
-
-
-/* iOS specific styles */
-        @supports (-webkit-touch-callout: none) {
-            .window {
-                -webkit-transform: translateZ(0);
-                transform: translateZ(0);
-            }
-        }
-
-        /* Safe area handling for newer iPhones */
-        @supports (padding: max(0px)) {
-            .taskbar {
-                padding-bottom: max(15px, env(safe-area-inset-bottom));
-            }
-            
-            .desktop {
-                height: calc(100vh - 80px - max(0px, env(safe-area-inset-bottom)));
-            }
         }
     </style>
 </head>
 <body>
-    <div class="desktop" id="desktop">
-        <!-- Desktop icons will be dynamically populated -->
-    </div>
-
-    <div class="taskbar">
-        <div class="start-menu" onclick="showStartMenu()">
+<div class="desktop" id="desktop">
+</div>
+<div class="taskbar">
+<div class="start-menu" onclick="showStartMenu()">
             🏠 Start
         </div>
-        <div class="taskbar-apps" id="taskbar-apps">
-            <!-- Running apps will appear here -->
-        </div>
-        <div class="start-menu" onclick="refreshAllWindows()" style="margin-left: auto;">
-            🔄 Refresh
-        </div>
-    </div>
-
-    <script>
+<div class="taskbar-apps" id="taskbar-apps">
+</div>
+</div>
+<script>
         // Global state management
         const OS = {
             windows: new Map(),
@@ -522,9 +452,7 @@
             nextWindowId: 1,
             nextZIndex: 1000,
             draggedWindow: null,
-            dragOffset: { x: 0, y: 0 },
-            touchStart: { x: 0, y: 0 },
-            isTouchDevice: 'ontouchstart' in window || navigator.maxTouchPoints > 0
+            dragOffset: { x: 0, y: 0 }
         };
 
         // Initialize the OS
@@ -539,16 +467,14 @@
             
             updateDesktopIcons();
             
-            // Add event listeners for touch and mouse
-            if (OS.isTouchDevice) {
-                document.addEventListener('touchstart', handleGlobalTouchStart, { passive: false });
-                document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
-                document.addEventListener('touchend', handleGlobalTouchEnd, { passive: false });
-            } else {
-                document.addEventListener('mousedown', handleGlobalMouseDown);
-                document.addEventListener('mousemove', handleGlobalMouseMove);
-                document.addEventListener('mouseup', handleGlobalMouseUp);
-            }
+            // Add event listeners for both mouse and touch
+            document.addEventListener('mousedown', handleGlobalMouseDown);
+            document.addEventListener('mousemove', handleGlobalMouseMove);
+            document.addEventListener('mouseup', handleGlobalMouseUp);
+
+            document.addEventListener('touchstart', handleGlobalTouchStart, { passive: false });
+            document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+            document.addEventListener('touchend', handleGlobalTouchEnd);
         }
 
         // Default apps installation
@@ -609,7 +535,7 @@
             existingIcons.forEach(icon => icon.remove());
 
             let x = 20, y = 20;
-            const iconWidth = 110, iconHeight = 130;
+            const iconWidth = 100, iconHeight = 110;
             const maxX = window.innerWidth - iconWidth;
 
             OS.installedApps.forEach((app, id) => {
@@ -627,97 +553,11 @@
                 desktop.appendChild(icon);
 
                 y += iconHeight;
-                if (y > window.innerHeight - iconHeight - 120) {
+                if (y > window.innerHeight - iconHeight - 100) {
                     y = 20;
                     x += iconWidth;
                 }
             });
-        }
-
-        // Touch event handlers for mobile window dragging
-        function handleGlobalTouchStart(e) {
-            const target = e.target.closest('.window-titlebar');
-            if (target) {
-                if (!e.target.closest('.window-control')) if (!e.target.closest('.window-control')) e.preventDefault();
-                const window = target.closest('.window');
-                if (window) {
-                    OS.draggedWindow = window;
-                    const touch = e.touches[0];
-                    const rect = window.getBoundingClientRect();
-                    OS.dragOffset.x = touch.clientX - rect.left;
-                    OS.dragOffset.y = touch.clientY - rect.top;
-                    OS.touchStart.x = touch.clientX;
-                    OS.touchStart.y = touch.clientY;
-                    
-                    window.style.zIndex = ++OS.nextZIndex;
-                }
-            }
-        }
-
-        function handleGlobalTouchMove(e) {
-            if (OS.draggedWindow) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const newX = touch.clientX - OS.dragOffset.x;
-                const newY = touch.clientY - OS.dragOffset.y;
-                
-                // Constrain to viewport
-                const maxX = window.innerWidth - OS.draggedWindow.offsetWidth;
-                const maxY = window.innerHeight - OS.draggedWindow.offsetHeight - 80;
-                
-                OS.draggedWindow.style.left = Math.max(0, Math.min(maxX, newX)) + 'px';
-                OS.draggedWindow.style.top = Math.max(0, Math.min(maxY, newY)) + 'px';
-            }
-        }
-
-        function handleGlobalTouchEnd(e) {
-            if (OS.draggedWindow) {
-                const touch = e.changedTouches[0];
-                const deltaX = Math.abs(touch.clientX - OS.touchStart.x);
-                const deltaY = Math.abs(touch.clientY - OS.touchStart.y);
-                
-                // If minimal movement, treat as tap
-                if (deltaX < 10 && deltaY < 10) {
-                    // Allow the click to proceed
-                }
-                
-                OS.draggedWindow = null;
-            }
-        }
-
-        // Mouse event handlers for desktop
-        function handleGlobalMouseDown(e) {
-            const target = e.target.closest('.window-titlebar');
-            if (target) {
-                const window = target.closest('.window');
-                if (window) {
-                    OS.draggedWindow = window;
-                    const rect = window.getBoundingClientRect();
-                    OS.dragOffset.x = e.clientX - rect.left;
-                    OS.dragOffset.y = e.clientY - rect.top;
-                    
-                    window.style.zIndex = ++OS.nextZIndex;
-                }
-            }
-        }
-
-        function handleGlobalMouseMove(e) {
-            if (OS.draggedWindow) {
-                e.preventDefault();
-                const newX = e.clientX - OS.dragOffset.x;
-                const newY = e.clientY - OS.dragOffset.y;
-                
-                // Constrain to viewport
-                const maxX = window.innerWidth - OS.draggedWindow.offsetWidth;
-                const maxY = window.innerHeight - OS.draggedWindow.offsetHeight - 80;
-                
-                OS.draggedWindow.style.left = Math.max(0, Math.min(maxX, newX)) + 'px';
-                OS.draggedWindow.style.top = Math.max(0, Math.min(maxY, newY)) + 'px';
-            }
-        }
-
-        function handleGlobalMouseUp(e) {
-            OS.draggedWindow = null;
         }
 
         // App launching
@@ -733,7 +573,6 @@
 
             const windowId = 'window-' + OS.nextWindowId++;
             const window = createWindow(windowId, app.name, app.emoji);
-            refreshAllWindows();
 
             // Add app-specific content
             let content = '';
@@ -745,24 +584,10 @@
                     content = createFileExplorerContent();
                     break;
                 default:
-                    if (app.htmlUrl) {
-                        content = `<iframe id="frame-${windowId}" style="width:100%;height:100%;border:none;"></iframe>`;
-                        setTimeout(() => {
-                            fetch(app.htmlUrl)
-                                .then(res => res.text())
-                                .then(html => {
-                                    const iframe = document.getElementById(`frame-${windowId}`);
-                                    if (iframe) {
-                                        iframe.srcdoc = html;
-                                    }
-                                })
-                                .catch(() => {
-                                    const iframe = document.getElementById(`frame-${windowId}`);
-                                    if (iframe) {
-                                        iframe.srcdoc = "<p style='padding:20px;color:red;'>Failed to fetch or render HTML content.</p>";
-                                    }
-                                });
-                        }, 100);
+                    if (app.htmlContent) {
+                        content = `<iframe src="data:text/html;charset=utf-8,${encodeURIComponent(app.htmlContent)}" style="width:100%;height:100%;border:none;"></iframe>`;
+                    } else if (app.htmlUrl) {
+                        content = `<iframe src="${app.htmlUrl}" style="width:100%;height:100%;border:none;"></iframe>`;
                     } else {
                         content = '<div style="padding:20px;">App content not available</div>';
                     }
@@ -781,7 +606,12 @@
 
             // Load app store data if needed
             if (appId === 'app-store') {
-                setTimeout(loadAppStoreData, 100);
+                loadAppStoreData();
+            }
+            
+            // Load file explorer data if needed
+            if (appId === 'file-explorer') {
+                updateFileList();
             }
         }
 
@@ -790,22 +620,14 @@
             const window = document.createElement('div');
             window.className = 'window';
             window.id = id;
-            
-            // Calculate safe positioning for mobile (avoid taskbar area)
-            const maxWidth = Math.min(window.innerWidth - 40, 400);
-            const maxHeight = Math.min(window.innerHeight - 160, 500);
-const taskbarHeight = 80;
-            const x = Math.max(20, (window.innerWidth - maxWidth) / 2);
-            const y = Math.max(20, (window.innerHeight - taskbarHeight - maxHeight) / 2);
-            
-            window.style.left = x + 'px';
-            window.style.top = y + 'px';
-            window.style.width = maxWidth + 'px';
-            window.style.height = maxHeight + 'px';
+            window.style.left = '50px';
+            window.style.top = '50px';
+            window.style.width = '800px';
+            window.style.height = '600px';
             window.style.zIndex = ++OS.nextZIndex;
 
             window.innerHTML = `
-                <div class="window-titlebar">
+                <div class="window-titlebar" onmousedown="startDrag(event, '${id}')" ontouchstart="startDrag(event, '${id}')">
                     <div class="window-title">
                         <span>${emoji}</span>
                         <span>${title}</span>
@@ -821,17 +643,24 @@ const taskbarHeight = 80;
 
             document.body.appendChild(window);
             OS.windows.set(id, window);
-
             return window;
         }
 
-        function focusWindow(windowId) {
+        function closeWindow(windowId) {
             const window = OS.windows.get(windowId);
             if (window) {
-                window.style.zIndex = ++OS.nextZIndex;
-                if (window.classList.contains('minimized')) {
-                    window.classList.remove('minimized');
+                window.remove();
+                OS.windows.delete(windowId);
+                
+                // Find and remove from running apps
+                for (const [appId, appData] of OS.runningApps.entries()) {
+                    if (appData.windowId === windowId) {
+                        OS.runningApps.delete(appId);
+                        break;
+                    }
                 }
+                
+                updateTaskbar();
             }
         }
 
@@ -839,6 +668,7 @@ const taskbarHeight = 80;
             const window = OS.windows.get(windowId);
             if (window) {
                 window.classList.add('minimized');
+                updateTaskbar();
             }
         }
 
@@ -849,22 +679,94 @@ const taskbarHeight = 80;
             }
         }
 
-        function closeWindow(windowId) {
+        function focusWindow(windowId) {
             const window = OS.windows.get(windowId);
             if (window) {
-                window.remove();
-                OS.windows.delete(windowId);
-
-                // Remove from running apps
-                for (const [appId, appData] of OS.runningApps) {
-                    if (appData.windowId === windowId) {
-                        OS.runningApps.delete(appId);
-                        break;
-                    }
-                }
-
+                window.classList.remove('minimized');
+                window.style.zIndex = ++OS.nextZIndex;
                 updateTaskbar();
             }
+        }
+
+        // Drag functionality
+        function startDrag(event, windowId) {
+            event.preventDefault(); // Prevent default touch behaviors like scrolling/zooming
+            const window = OS.windows.get(windowId);
+            if (window && !window.classList.contains('maximized')) {
+                OS.draggedWindow = window;
+                const rect = window.getBoundingClientRect();
+
+                let clientX, clientY;
+                if (event.type === 'touchstart') {
+                    clientX = event.touches[0].clientX;
+                    clientY = event.touches[0].clientY;
+                } else {
+                    clientX = event.clientX;
+                    clientY = event.clientY;
+                }
+
+                OS.dragOffset = {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+                window.style.zIndex = ++OS.nextZIndex;
+            }
+        }
+
+        function handleGlobalMouseDown(event) {
+            // Handle window focus
+            const window = event.target.closest('.window');
+            if (window) {
+                window.style.zIndex = ++OS.nextZIndex;
+            }
+        }
+
+        function handleGlobalMouseMove(event) {
+            if (OS.draggedWindow) {
+                let clientX = event.clientX;
+                let clientY = event.clientY;
+                
+                const newX = clientX - OS.dragOffset.x;
+                const newY = clientY - OS.dragOffset.y;
+                
+                OS.draggedWindow.style.left = Math.max(0, Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth)) + 'px';
+                OS.draggedWindow.style.top = Math.max(0, Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50)) + 'px'; // -50 for taskbar
+            }
+        }
+
+        function handleGlobalMouseUp() {
+            OS.draggedWindow = null;
+        }
+
+        function handleGlobalTouchStart(event) {
+            // Handle window focus
+            const window = event.target.closest('.window');
+            if (window) {
+                window.style.zIndex = ++OS.nextZIndex;
+            }
+             // Call startDrag if the touch is on a window titlebar
+            if (event.target.closest('.window-titlebar')) {
+                const windowId = event.target.closest('.window').id;
+                startDrag(event, windowId);
+            }
+        }
+
+        function handleGlobalTouchMove(event) {
+            if (OS.draggedWindow && event.touches.length === 1) { // Only drag with one finger
+                event.preventDefault(); // Prevent scrolling while dragging
+                const clientX = event.touches[0].clientX;
+                const clientY = event.touches[0].clientY;
+                
+                const newX = clientX - OS.dragOffset.x;
+                const newY = clientY - OS.dragOffset.y;
+                
+                OS.draggedWindow.style.left = Math.max(0, Math.min(newX, window.innerWidth - OS.draggedWindow.offsetWidth)) + 'px';
+                OS.draggedWindow.style.top = Math.max(0, Math.min(newY, window.innerHeight - OS.draggedWindow.offsetHeight - 50)) + 'px'; // -50 for taskbar
+            }
+        }
+
+        function handleGlobalTouchEnd() {
+            OS.draggedWindow = null;
         }
 
         // Taskbar management
@@ -873,9 +775,23 @@ const taskbarHeight = 80;
             taskbarApps.innerHTML = '';
 
             OS.runningApps.forEach((appData, appId) => {
+                const window = OS.windows.get(appData.windowId);
                 const button = document.createElement('div');
                 button.className = 'taskbar-app';
-                button.onclick = () => focusWindow(appData.windowId);
+                
+                if (window && !window.classList.contains('minimized')) {
+                    button.classList.add('active');
+                }
+                
+                button.onclick = () => {
+                    if (window && window.classList.contains('minimized')) {
+                        focusWindow(appData.windowId);
+                    } else if (window && window.style.zIndex == OS.nextZIndex) {
+                        minimizeWindow(appData.windowId);
+                    } else {
+                        focusWindow(appData.windowId);
+                    }
+                };
 
                 button.innerHTML = `
                     <span>${appData.app.emoji}</span>
@@ -932,8 +848,8 @@ const taskbarHeight = 80;
                     ${apps.map(app => `
                         <div class="app-item">
                             <div class="app-header">
-                                <span class="app-emoji">${app.emoji}</span>
-                                <span class="app-name">${app.name}</span>
+                                <div class="app-emoji">${app.emoji}</div>
+                                <div class="app-name">${app.name}</div>
                             </div>
                             <div class="app-description">${app.description}</div>
                             <button class="install-btn" 
@@ -973,10 +889,10 @@ const taskbarHeight = 80;
                     loadAppStoreData();
                 }
                 
-                
+                alert(`${name} has been installed successfully!`);
             } catch (error) {
                 console.error('Installation error:', error);
-                
+                alert(`Failed to install ${name}. Please try again.`);
             }
         }
 
@@ -985,304 +901,270 @@ const taskbarHeight = 80;
         }
 
         // File Explorer functionality
-
-        function addSelectedFileAsApp() {
-            const selected = document.querySelector('.file-item.selected');
-            if (!selected) {
-                alert("Please select a file to add as an app.");
-                return;
-            }
-
-            const fileId = selected.dataset.fileId;
-            const file = OS.files.get(fileId);
-            if (!file || !file.name.endsWith(".html")) {
-                alert("Only HTML files can be added as apps.");
-                return;
-            }
-
-            const appId = generateAppId(file.name);
-            const appName = file.name.replace(/\.html$/, '');
-            const app = {
-                id: appId,
-                name: appName,
-                emoji: "📄",
-                description: "Imported from File Explorer",
-                htmlUrl: "data:text/html;base64," + btoa(file.content),
-                type: 'installed'
-            };
-
-            OS.installedApps.set(appId, app);
-            saveInstalledApps();
-            updateDesktopIcons();
-            alert("App '" + appName + "' added to home screen.");
-        }
-function selectFileUI(element) {
-    document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
-    element.classList.add('selected');
-}
-
-
-function renameFile(fileId, newName) {
-    const file = OS.files.get(fileId);
-    if (!file || !newName.trim()) return;
-    file.name = newName.trim();
-    file.modified = Date.now();
-    OS.files.set(fileId, file);
-    saveFiles();
-    refreshFiles();
-    updateDesktopIcons();
-}
-
-function runFileAsApp(element) {
-    const fileId = element.dataset.fileId;
-    const file = OS.files.get(fileId);
-    if (!file || !file.name.endsWith(".html")) return;
-
-    const appId = generateAppId(file.name);
-    const appName = file.name.replace(/\\.html$/, '');
-    const app = {
-        id: appId,
-        name: appName,
-        emoji: "📄",
-        description: "Imported from File Explorer",
-        htmlUrl: "data:text/html;base64," + btoa(file.content),
-        type: 'installed'
-    };
-
-    OS.installedApps.set(appId, app);
-    saveInstalledApps();
-    updateDesktopIcons();
-    launchApp(appId);
-}
-
-function editSelectedFile() {
-    const selected = document.querySelector('.file-item.selected');
-    if (!selected) return;
-
-    const fileId = selected.dataset.fileId;
-    openFile(fileId);
-}
-
-
         function createFileExplorerContent() {
             return `
                 <div class="file-explorer">
-<div class="file-toolbar">
-    <button class="toolbar-btn" onclick="createNewFile()">New File</button>
-    <button class="toolbar-btn" onclick="refreshFiles()">Refresh</button>
-    <button class="toolbar-btn" onclick="editSelectedFile()">Edit</button>
-    <button class="toolbar-btn" onclick="addSelectedFileAsApp()">Add App</button>
-    <button class="toolbar-btn" onclick="promptRenameFile()">Rename</button>
-</div>
-                    <div class="file-list" id="file-list">
-                        ${Array.from(OS.files.values()).map(file => `
-<div class="file-item" data-file-id="${file.id}" ondblclick="runFileAsApp(this)">
-                                <div class="file-icon">📄</div>
-                                <div class="file-name">${file.name}</div>
-                                <div class="file-meta">Modified: ${new Date(file.modified).toLocaleDateString()}</div>
-                            </div>
-                        `).join('')}
+                    <div class="file-toolbar">
+                        <button class="toolbar-btn" onclick="createNewFile()">📝 New HTML File</button>
+                        <button class="toolbar-btn" onclick="refreshFileList()">🔄 Refresh</button>
                     </div>
+                    <div id="file-list" class="file-list">
+                        </div>
                 </div>
             `;
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('file-list');
+            if (!fileList) return;
+
+            if (OS.files.size === 0) {
+                fileList.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">No files yet. Create your first HTML file!</div>';
+                return;
+            }
+
+            fileList.innerHTML = Array.from(OS.files.entries()).map(([fileName, fileData]) => `
+                <div class="file-item" onclick="openFile('${fileName}')">
+                    <div class="file-icon">📄</div>
+                    <div class="file-name">${fileName}</div>
+                    <div class="file-meta">
+                        Modified: ${new Date(fileData.modified).toLocaleDateString()}<br>
+                        Size: ${fileData.content.length} characters
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function refreshFileList() {
+            updateFileList();
         }
 
         function createNewFile() {
-            const name = "Untitled";
-            if (name) {
-                const fileId = 'file-' + Date.now();
-                const file = {
-                    id: fileId,
-                    name: name,
-                    content: '<h1>New HTML File</h1>\n<p>Start editing...</p>',
-                    modified: Date.now()
-                };
+            showModal('Create New HTML File', 'Enter filename (without .html extension):', '', (fileName) => {
+                if (fileName.trim()) {
+                    const fullFileName = fileName.trim() + '.html';
+                    const defaultContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${fileName}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to ${fileName}</h1>
+    <p>This is your new HTML file. Start editing!</p>
+</body>
+</html>`;
 
-                OS.files.set(fileId, file);
-                saveFiles();
-                refreshFiles();
-                openFile(fileId);
-            }
+                    OS.files.set(fullFileName, {
+                        content: defaultContent,
+                        modified: Date.now()
+                    });
+                    
+                    saveFiles();
+                    updateFileList();
+                    openFile(fullFileName);
+                }
+            });
         }
 
-        function refreshFiles() {
-            const fileList = document.getElementById('file-list');
-            if (fileList) {
-                fileList.innerHTML = Array.from(OS.files.values()).map(file => `
-                    <div class="file-item" data-file-id="${file.id}" onclick="openFile(\'${file.id}\')">
-                        <div class="file-icon">📄</div>
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-meta">Modified: ${new Date(file.modified).toLocaleDateString()}</div>
-                    </div>
-                `).join('');
-            }
-        }
-
-        function openFile(fileId) {
-            const file = OS.files.get(fileId);
-            if (!file) return;
+        function openFile(fileName) {
+            const fileData = OS.files.get(fileName);
+            if (!fileData) return;
 
             const windowId = 'editor-' + OS.nextWindowId++;
-            const window = createWindow(windowId, `Editor - ${file.name}`, '📝');
+            const window = createWindow(windowId, `📝 ${fileName}`, '📝');
 
-            const content = `
+            window.querySelector('.window-content').innerHTML = createHTMLEditorContent(fileName, fileData.content);
+        }
+
+        function createHTMLEditorContent(fileName, content) {
+            return `
                 <div class="html-editor">
                     <div class="editor-toolbar">
-                        <button class="toolbar-btn" onclick="saveFile('${fileId}', '${windowId}')">Save</button>
-                        <button class="toolbar-btn" onclick="previewFile('${windowId}')">Preview</button>
+                        <button class="toolbar-btn" onclick="saveFile('${fileName}')">💾 Save</button>
+                        <button class="toolbar-btn" onclick="previewFile('${fileName}')">👁️ Preview</button>
+                        <button class="toolbar-btn" onclick="installAsApp('${fileName}')">📱 Install as App</button>
                     </div>
                     <div class="editor-input">
-                        <textarea class="editor-textarea" id="editor-${windowId}" placeholder="Enter HTML content...">${file.content}</textarea>
-                        <iframe class="preview-frame" id="preview-${windowId}" style="display:none;"></iframe>
+                        <textarea id="editor-${fileName}" class="editor-textarea" placeholder="Enter your HTML code here...">${content}</textarea>
+                        <iframe id="preview-${fileName}" class="preview-frame" style="display:none;"></iframe>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveFile(fileName) {
+            const textarea = document.getElementById(`editor-${fileName}`);
+            if (textarea) {
+                OS.files.set(fileName, {
+                    content: textarea.value,
+                    modified: Date.now()
+                });
+                saveFiles();
+                updateFileList();
+                alert('File saved successfully!');
+            }
+        }
+
+        function previewFile(fileName) {
+            const textarea = document.getElementById(`editor-${fileName}`);
+            const preview = document.getElementById(`preview-${fileName}`);
+            
+            if (textarea && preview) {
+                if (preview.style.display === 'none') {
+                    const content = textarea.value;
+                    preview.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(content);
+                    preview.style.display = 'block';
+                    textarea.style.height = '50%';
+                } else {
+                    preview.style.display = 'none';
+                    textarea.style.height = '100%';
+                }
+            }
+        }
+
+        function installAsApp(fileName) {
+            const textarea = document.getElementById(`editor-${fileName}`);
+            if (!textarea) return;
+
+            const content = textarea.value;
+            const appName = fileName.replace('.html', '');
+            const appId = generateAppId(appName);
+
+            if (OS.installedApps.has(appId)) {
+                if (confirm('An app with this name already exists. Update it?')) {
+                    const existingApp = OS.installedApps.get(appId);
+                    existingApp.htmlContent = content;
+                    OS.installedApps.set(appId, existingApp);
+                }
+            } else {
+                showModal('Install as App', 'Choose an emoji for your app:', '⭐', (emoji) => {
+                    const app = {
+                        id: appId,
+                        name: appName,
+                        emoji: emoji || '⭐',
+                        description: `Custom HTML app: ${appName}`,
+                        htmlContent: content,
+                        type: 'custom'
+                    };
+
+                    OS.installedApps.set(appId, app);
+                    saveInstalledApps();
+                    updateDesktopIcons();
+                    alert(`${appName} has been installed as an app!`);
+                });
+            }
+        }
+
+        // Modal functionality
+        function showModal(title, message, defaultValue, callback) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-title">${title}</div>
+                    <p>${message}</p>
+                    <input type="text" class="modal-input" value="${defaultValue}" id="modal-input">
+                    <div class="modal-buttons">
+                        <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
+                        <button class="modal-btn primary" onclick="confirmModal()">OK</button>
                     </div>
                 </div>
             `;
 
-            window.querySelector('.window-content').innerHTML = content;
-        }
+            document.body.appendChild(modal);
 
-        function saveFile(fileId, windowId) {
-            const textarea = document.getElementById(`editor-${windowId}`);
-            const file = OS.files.get(fileId);
-            
-            if (textarea && file) {
-                file.content = textarea.value;
-                file.modified = Date.now();
-                OS.files.set(fileId, file);
-                saveFiles();
+            // Store callback for later use
+            window.modalCallback = callback;
+
+            // Focus input and select text
+            setTimeout(() => {
+                const input = document.getElementById('modal-input');
+                input.focus();
+                input.select();
                 
-                refreshFiles();
-            }
+                // Handle Enter key
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        confirmModal();
+                    } else if (e.key === 'Escape') {
+                        closeModal();
+                    }
+                });
+            }, 100);
         }
 
-        function previewFile(windowId) {
-            const textarea = document.getElementById(`editor-${windowId}`);
-            const preview = document.getElementById(`preview-${windowId}`);
+        function closeModal() {
+            const modal = document.querySelector('.modal');
+            if (modal) {
+                modal.remove();
+            }
+            window.modalCallback = null;
+        }
+
+        function confirmModal() {
+            const input = document.getElementById('modal-input');
+            const callback = window.modalCallback;
             
-            if (textarea && preview) {
-                if (preview.style.display === 'none') {
-                    preview.style.display = 'block';
-                    preview.srcdoc = textarea.value;
-                } else {
-                    preview.style.display = 'none';
-                }
+            if (callback && input) {
+                callback(input.value);
             }
+            
+            closeModal();
         }
 
-        
-    function renameFile(fileId, newName) {
-        const file = OS.files.get(fileId);
-        if (!file || !newName.trim()) return;
-        file.name = newName.trim();
-        file.modified = Date.now();
-        OS.files.set(fileId, file);
-        saveFiles();
-        refreshFiles();
-        updateDesktopIcons();
-    }
-    
-
-// Start menu functionality
+        // Start menu (placeholder for future enhancement)
         function showStartMenu() {
-            
+            // For now, just launch the app store
+            launchApp('app-store');
         }
-
-        // Refresh all windows positioning
-        function refreshAllWindows() {
-            const centerX = (window.innerWidth / 2) - 200;
-            const centerY = (window.innerHeight / 2) - 250;
-            let offsetX = 0;
-            let offsetY = 0;
-
-            OS.windows.forEach((windowElement) => {
-                // Position windows in a cascade from center
-                windowElement.style.left = Math.max(20, centerX + offsetX) + 'px';
-                windowElement.style.top = Math.max(20, centerY + offsetY) + 'px';
-                windowElement.style.zIndex = ++OS.nextZIndex;
-                
-                // Remove minimized state if present
-                windowElement.classList.remove('minimized');
-                
-                // Offset for next window
-                offsetX += 30;
-                offsetY += 30;
-                
-                // Reset offset if going off screen
-                if (centerX + offsetX > window.innerWidth - 400 || centerY + offsetY > window.innerHeight - 400) {
-                    offsetX = 0;
-                    offsetY = 0;
-                }
-            });
-        }
-let currentRenameFileId = null;
-
-function openRenameModal(fileId, currentName) {
-    currentRenameFileId = fileId;
-    document.getElementById("modal-title").innerText = "Rename File";
-    document.getElementById("modal-input").value = currentName;
-    document.getElementById("custom-modal").style.display = "flex";
-}
-
-function closeModal() {
-    document.getElementById("custom-modal").style.display = "none";
-    currentRenameFileId = null;
-}
-
-function confirmRename() {
-    const input = document.getElementById("modal-input").value.trim();
-    if (!input || !currentRenameFileId) return;
-
-    const file = OS.files.get(currentRenameFileId);
-    if (file) {
-        file.name = input;
-        file.modified = Date.now();
-        OS.files.set(currentRenameFileId, file);
-        saveFiles();
-        refreshFiles();
-        updateDesktopIcons();
-    }
-    closeModal();
-}
-
-function promptRenameFile() {
-    const selected = document.querySelector('.file-item.selected');
-    if (!selected) {
-        showToast("Please select a file to rename.");
-        return;
-    }
-
-    const fileId = selected.dataset.fileId;
-    const file = OS.files.get(fileId);
-    if (!file) return;
-
-    openRenameModal(fileId, file.name);
-}
-
-
-
-        
-document.addEventListener('click', function(e) {
-    const item = e.target.closest('.file-item');
-    if (item && item.dataset.fileId) {
-        document.querySelectorAll('.file-item.selected').forEach(el => el.classList.remove('selected'));
-        item.classList.add('selected');
-    }
-});
-
 
         // Initialize the OS when page loads
         window.addEventListener('load', initOS);
-        window.addEventListener('resize', updateDesktopIcons);
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            updateDesktopIcons();
+        });
     </script>
-<div id="custom-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-title" id="modal-title">Rename File</div>
-        <input type="text" class="modal-input" id="modal-input" placeholder="Enter new name">
-        <div class="modal-buttons">
-            <button class="modal-btn secondary" onclick="closeModal()">Cancel</button>
-            <button class="modal-btn primary" onclick="confirmRename()">Rename</button>
-        </div>
-    </div>
-</div>
+
+<script>
+// This part of the script is separate and seems to be for a different AppLauncher/WindowManager
+// It's not directly integrated with the main OS object and functions above.
+// If you want File Explorer to behave like other apps and use the same windowing system,
+// you should remove this section and ensure the `file-explorer` case in `launchApp` is sufficient.
+/*
+AppLauncher.registerApp({
+  id: 'file-explorer',
+  name: 'File Explorer',
+  icon: 'icons/folder.png',
+  launch() {
+    const win = WindowManager.createWindow({
+      title: 'File Explorer',
+      width: 1100,
+      height: 750,
+      resizable: true,
+      fullscreenable: true
+    });
+
+    const iframe = document.createElement('iframe');
+    iframe.src = 'PPPERFECT.html';  // Ensure this file is in the same folder
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+
+    win.setContent(iframe);
+  }
+});
+*/
+</script>
 </body>
 </html>
