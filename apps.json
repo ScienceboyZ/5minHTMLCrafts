@@ -81,6 +81,6 @@
     "name": "Mini Car",
     "emoji": "🚗",
     "description": "A mini car game",
-    "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/refs/heads/main/car.html"
+    "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/refs/heads/main/car.html"
   }
 ]
