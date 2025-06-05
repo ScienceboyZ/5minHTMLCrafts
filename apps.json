@@ -70,5 +70,11 @@
     "emoji": "🥵",
     "description": "A bit about us",
     "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/AboutUs.html"
+  },
+  {
+    "name": "Tower Defence",
+    "emoji": "✈🗼🗼",
+    "description": "A tower defense game",
+    "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/HTMLTD.html"
   }
 ]
