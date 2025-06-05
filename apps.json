@@ -76,11 +76,5 @@
     "emoji": "✈🗼🗼",
     "description": "A tower defense game",
     "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/HTMLTD.html"
-  },
-  {
-    "name": "Mini Car",
-    "emoji": "🚗",
-    "description": "A mini car game",
-    "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/refs/heads/main/car.html"
   }
 ]
