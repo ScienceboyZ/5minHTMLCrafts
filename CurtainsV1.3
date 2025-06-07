@@ -187,7 +187,7 @@
             align-items: center;
             cursor: pointer;
             padding: 10px;
-            border-radius: 8px;
+            border-radius: 88px;
             transition: background 0.3s;
             color: var(--text-color, white);
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
@@ -429,8 +429,6 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            /* Ensure CodeMirror takes full available height */
-            height: calc(100% - 60px); /* Adjust based on toolbar height */
         }
 
         /* CodeMirror specific styling within the editor */
@@ -725,11 +723,20 @@
             color: var(--window-content-text-color, #333);
         }
         .notepad-editor-container {
-            flex: 1;
+            flex: 1; /* Takes all remaining vertical space */
             display: flex;
             flex-direction: column;
-            height: calc(100% - 60px); /* Adjust based on toolbar height */
         }
+        /* Ensure the CodeMirror container fills its parent */
+        #notepad-editor-main-container {
+            flex-grow: 1; /* Allows it to grow and fill available space */
+            height: 100%; /* Explicitly make it fill parent */
+        }
+        /* Ensure CodeMirror itself fills its direct parent (the main container) */
+        .notepad-editor-container .CodeMirror {
+            height: 100%; /* Make CodeMirror fill its container */
+        }
+
         /* Sexy UI mode example */
         .notepad-app.sexy-ui .CodeMirror {
             border-radius: 15px;
@@ -1653,7 +1660,7 @@
         function createFileExplorerContent() {
             return `
                 <div class="file-explorer">
-                    <h2>File Explorer</h2>
+                    <h2>📁 File Explorer</h2>
                     <div class="file-toolbar">
                         <button class="toolbar-btn" onclick="createFilePrompt()">📝 New File</button>
                         <button class="toolbar-btn" onclick="createFolderPrompt()">📁 New Folder</button>
@@ -1832,113 +1839,87 @@
             filePathDiv.textContent = OS.currentDirectory;
             fileListDiv.innerHTML = ''; // Clear current list
 
-            const itemsInCurrentDir = [];
+            const itemsToAdd = new Map(); // Use map to prevent duplicates by path, storing {name, type}
+
             const currentDirPrefix = OS.currentDirectory === '/' ? '/' : OS.currentDirectory + '/';
 
-            // Collect direct files
-            OS.files.forEach((item, path) => {
-                if (item.type === 'file' && path.startsWith(currentDirPrefix)) {
-                    const relativePath = path.substring(currentDirPrefix.length);
-                    if (!relativePath.includes('/')) { // Is a direct file
-                        itemsInCurrentDir.push({ path: path, item: item });
-                    }
+            // Iterate over ALL files and determine what to display in current directory
+            OS.files.forEach((fileEntry, fullPath) => {
+                if (!fullPath.startsWith(currentDirPrefix)) {
+                    return; // Not in or under the current directory
                 }
-            });
 
-            // Collect direct folders (explicitly stored or implicitly defined by nested files)
-            const encounteredFolderNames = new Set();
-            OS.files.forEach((item, path) => {
-                if (path.startsWith(currentDirPrefix)) {
-                    const relativePath = path.substring(currentDirPrefix.length);
-                    const firstSlashIndex = relativePath.indexOf('/');
+                const relativePath = fullPath.substring(currentDirPrefix.length);
+                if (relativePath === '') {
+                    return; // This is the current directory itself, not an item within it
+                }
 
-                    if (firstSlashIndex !== -1) { // It's a path into a subfolder
-                        const topLevelFolderName = relativePath.substring(0, firstSlashIndex);
-                        if (!encounteredFolderNames.has(topLevelFolderName)) {
-                            encounteredFolderNames.add(topLevelFolderName);
-                            const topLevelFolderPath = normalizePath(currentDirPrefix + topLevelFolderName);
-                            itemsInCurrentDir.push({ 
-                                path: topLevelFolderPath, 
-                                item: { name: topLevelFolderName, type: 'folder' } 
-                            });
+                const firstSlashIndex = relativePath.indexOf('/');
+
+                if (firstSlashIndex === -1) {
+                    // This is a direct file or an explicit direct folder
+                    itemsToAdd.set(fullPath, { name: fileEntry.name, type: fileEntry.type, path: fullPath });
+                } else {
+                    // This is a file/folder inside a subdirectory. We need to show the subdirectory.
+                    const subfolderName = relativePath.substring(0, firstSlashIndex);
+                    const subfolderPath = normalizePath(currentDirPrefix + subfolderName);
+                    // Add this subfolder as an item to display, but only if it's not already added
+                    // and not already an explicit file (which would imply naming conflict)
+                    if (!itemsToAdd.has(subfolderPath)) {
+                        // Check if an explicit folder entry already exists for this path
+                        const existingExplicitFolder = OS.files.get(subfolderPath);
+                        if (existingExplicitFolder && existingExplicitFolder.type === 'folder') {
+                            itemsToAdd.set(subfolderPath, { name: subfolderName, type: 'folder', path: subfolderPath });
+                        } else {
+                            // It's an implicit folder
+                            itemsToAdd.set(subfolderPath, { name: subfolderName, type: 'folder', path: subfolderPath });
                         }
-                    } else if (item.type === 'folder' && path === currentDirPrefix + item.name) { // Explicitly stored direct folder
-                         if (!encounteredFolderNames.has(item.name)) {
-                            encounteredFolderNames.add(item.name);
-                            itemsInCurrentDir.push({ path: path, item: item });
-                         }
                     }
                 }
             });
 
-
-            // Sort folders first, then files, both alphabetically
-            itemsInCurrentDir.sort((a, b) => {
-                const typeA = a.item.type === 'folder' ? 0 : 1;
-                const typeB = b.item.type === 'folder' ? 0 : 1;
+            // Convert map values to array and sort
+            const sortedItems = Array.from(itemsToAdd.values()).sort((a, b) => {
+                const typeA = a.type === 'folder' ? 0 : 1;
+                const typeB = b.type === 'folder' ? 0 : 1;
                 if (typeA !== typeB) {
                     return typeA - typeB;
                 }
-                return a.item.name.localeCompare(b.item.name);
-            }).filter(item => { // Filter out duplicates based on name and type after sorting
-                if (item.item.type === 'folder' && OS.files.has(item.path) && OS.files.get(item.path).type === 'folder') {
-                    // If it's an explicitly stored folder, keep it.
-                    return true;
-                }
-                // If it's an implicit folder, check if an explicit one with same path already exists.
-                // This ensures implicit folders are only shown if no explicit folder entry exists.
-                if (item.item.type === 'folder' && !OS.files.has(item.path)) {
-                    return true;
-                }
-                if (item.item.type === 'file') {
-                    return true;
-                }
-                return false;
+                return a.name.localeCompare(b.name);
             });
 
-
-            if (itemsInCurrentDir.length === 0) {
+            if (sortedItems.length === 0) {
                 fileListDiv.innerHTML = '<p style="text-align: center; color: #666;">This folder is empty.</p>';
                 return;
             }
 
-            // A temp Set to track items already added to the display to prevent duplicates
-            const displayedItemPaths = new Set();
-
-            itemsInCurrentDir.forEach(({ path, item }) => {
-                // Ensure only unique items based on their full path are displayed
-                if (displayedItemPaths.has(path)) {
-                    return;
-                }
-                displayedItemPaths.add(path);
-
+            sortedItems.forEach(itemInfo => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'file-item';
-                itemDiv.dataset.path = path; // Store full path
+                itemDiv.dataset.path = itemInfo.path; // Store full path
 
                 let icon = '';
                 let meta = '';
 
-                if (item.type === 'folder') {
+                if (itemInfo.type === 'folder') {
                     icon = '📁';
                     meta = 'Folder';
-                    itemDiv.onclick = () => openFileOrFolder(path, 'folder');
+                    itemDiv.onclick = () => openFileOrFolder(itemInfo.path, 'folder');
                 } else { // type === 'file'
-                    icon = getFileIcon(item.name); // Helper to get file icon
-                    meta = `File (${item.type || 'unknown'})`;
-                    itemDiv.onclick = () => openFileOrFolder(path, 'file');
+                    icon = getFileIcon(itemInfo.name); // Helper to get file icon
+                    meta = `File (${itemInfo.type || 'unknown'})`;
+                    itemDiv.onclick = () => openFileOrFolder(itemInfo.path, 'file');
                 }
 
                 itemDiv.innerHTML = `
                     <div class="file-icon">${icon}</div>
-                    <div class="file-name">${item.name}</div>
+                    <div class="file-name">${itemInfo.name}</div>
                     <div class="file-meta">${meta}</div>
                 `;
 
-                // Add context menu (right-click) for delete
                 itemDiv.addEventListener('contextmenu', (e) => {
-                    e.preventDefault(); // Prevent default browser context menu
-                    showContextMenu(e, itemDiv, path);
+                    e.preventDefault(); 
+                    showContextMenu(e, itemDiv, itemInfo.path);
                 });
 
                 fileListDiv.appendChild(itemDiv);
@@ -1950,22 +1931,14 @@
             const parts = fileName.split('.');
             const extension = parts.length > 1 ? parts.pop().toLowerCase() : '';
             switch (extension) {
-                case 'txt': return '📄';
+                case 'txt': return '�';
                 case 'html':
                 case 'htm': return '🌐';
                 case 'js': return '📜';
                 case 'css': return '🎨';
                 case 'json': return '💾';
-                case 'png':
-                case 'jpg':
-                case 'jpeg':
-                case 'gif': return '🖼️';
-                case 'mp3':
-                case 'wav': return '🎵';
-                case 'mp4':
-                case 'avi': return '🎬';
                 case 'md': return '🗒️';
-                case 'py': return ' ';
+                case 'py': return '🐍';
                 default: return '❓';
             }
         }
@@ -2316,7 +2289,7 @@
                 `;
             });
 
-            // Pass true for isHtmlContent and false for requiresTextConfirmation
+            // Pass true for isHtmlContent and false for expectsTextValue
             showPrompt('Manage Startup Apps', 'Select apps to launch on startup:', appOptionsHtml, (result) => {
                 // Result here will be an empty string, we need to read checkboxes directly
                 const selectedApps = [];
@@ -2329,7 +2302,7 @@
                 saveSettings(); // This will now fail silently
                 loadSettingsForm(); // Refresh the settings form display
                 showAlert('Startup Apps Updated', 'Startup apps updated!');
-            }, true, false); // Explicitly state no text confirmation needed
+            }, true, false); // Explicitly state no text confirmation needed for this prompt
         }
 
 
@@ -2389,13 +2362,13 @@
                 appOptionsHtml += `<option value="${app.id}">${app.emoji} ${app.name}</option>`;
             });
 
-            // Pass true for isHtmlContent and false for requiresTextConfirmation
+            // Pass true for isHtmlContent and false for expectsTextValue
             showPrompt('Start New Task', 'Select an application to launch:', `<select id="start-new-app-select">${appOptionsHtml}</select>`, (result) => {
                 const selectedAppId = document.getElementById('start-new-app-select').value;
                 if (selectedAppId) {
                     launchApp(selectedAppId, {newWindow: true}); // Always launch as new window from task manager modal
                 }
-            }, true, false); // Explicitly state no text confirmation needed
+            }, true, false); // Explicitly state no text confirmation needed for this prompt
         }
 
         // Cmd App
@@ -2932,9 +2905,10 @@
                     const preview = document.getElementById('preview-notepad-editor');
                     if (preview) {
                         preview.style.display = 'none';
-                        const editorContainer = currentCodeMirrorEditor.getWrapperElement();
-                        editorContainer.style.height = '100%';
-                        currentCodeMirrorEditor.refresh();
+                        // Ensure editor takes full height when preview is hidden
+                        const editorContainer = document.getElementById('notepad-editor-main-container');
+                        if (editorContainer) editorContainer.style.height = '100%';
+                        if (currentCodeMirrorEditor) currentCodeMirrorEditor.refresh();
                         if (preview.src.startsWith('blob:')) {
                             URL.revokeObjectURL(preview.src);
                             preview.removeAttribute('src');
@@ -3104,14 +3078,14 @@
                     preview.setAttribute('sandbox', 'allow-scripts allow-same-origin');
                     preview.style.display = 'block';
                     // Adjust CodeMirror height when preview is visible
-                    const editorContainer = currentCodeMirrorEditor.getWrapperElement();
-                    editorContainer.style.height = 'calc(50% - 15px)'; // 15px for margin-top on iframe
+                    const editorContainer = document.getElementById('notepad-editor-main-container');
+                    if (editorContainer) editorContainer.style.height = 'calc(50% - 15px)'; // 15px for margin-top on iframe
                     currentCodeMirrorEditor.refresh(); // Refresh after height change
                 } else {
                     preview.style.display = 'none';
                     // Reset CodeMirror height when preview is hidden
-                    const editorContainer = currentCodeMirrorEditor.getWrapperElement();
-                    editorContainer.style.height = '100%';
+                    const editorContainer = document.getElementById('notepad-editor-main-container');
+                    if (editorContainer) editorContainer.style.height = '100%';
                     currentCodeMirrorEditor.refresh(); // Refresh after height change
                     // Optionally revoke blob URL for preview when hidden
                     if (preview.src.startsWith('blob:')) {
@@ -3254,8 +3228,9 @@
             showModal(title, message, '', callback, false, true, false); // No input, OK only, no text value expected
         }
 
-        function showPrompt(title, message, defaultValue = '', callback) {
-            showModal(title, message, defaultValue, callback, false, false, true); // Has input, OK/Cancel, expects text value
+        function showPrompt(title, message, defaultValue = '', callback, isHtmlContent = false) {
+            // For showPrompt, expectsTextValue is always true unless explicitly told otherwise for custom HTML content
+            showModal(title, message, defaultValue, callback, isHtmlContent, false, !isHtmlContent); 
         }
 
         function showConfirm(message, callback, title = 'Confirm') {
@@ -3282,4 +3257,3 @@
     </script>
 </body>
 </html>
- 
