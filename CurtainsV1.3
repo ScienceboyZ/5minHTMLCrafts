@@ -1294,7 +1294,7 @@
             
             // Position new windows dynamically to avoid overlap
             let newX = (25 - insets.left + (OS.nextWindowId * 10) % 100);
-            let newY = (50 + insets.top + (OS.nextWindowId * 10) % 100);
+            let newY = (0 + insets.top + (OS.nextWindowId * 10) % 100);
 
             // Adjust for taskbar position if it's top or left
             const taskbarHeightVal = parseFloat(OS.settings.taskbarHeight);
