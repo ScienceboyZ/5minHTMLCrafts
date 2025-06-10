@@ -1293,7 +1293,7 @@
             const insets = getSafeAreaInsets();
             
             // Position new windows dynamically to avoid overlap
-            let newX = (25 - insets.left + (OS.nextWindowId * 10) % 100);
+            let newX = (0 - insets.left + (OS.nextWindowId * 10) % 100);
             let newY = (0 + insets.top + (OS.nextWindowId * 10) % 100);
 
             // Adjust for taskbar position if it's top or left
@@ -1307,8 +1307,8 @@
             window.style.left = newX + 'px';
             window.style.top = newY + 'px';
             
-            window.style.width = '800px';
-            window.style.height = '600px';
+            window.style.width = '300px';
+            window.style.height = '220px';
             window.style.zIndex = ++OS.nextZIndex;
 
             window.innerHTML = `
