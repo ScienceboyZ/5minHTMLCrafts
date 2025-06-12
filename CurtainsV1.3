@@ -295,7 +295,7 @@
             color: var(--window-content-text-color, #333); /* Default window content text color */
         }
 
-        .app-store, .file-explorer, .html-editor, .settings-app, .task-manager, .cmd-app, .calculator-app, .notepad-app {
+        .app-store, .file-explorer, .html-editor, .settings-app, .task-manager, .cmd-app, .calculator-app, .notepad-app, .python-app {
             padding: 20px;
             height: 100%; /* Ensure app content fills window */
             box-sizing: border-box; /* Include padding in height */
@@ -364,7 +364,7 @@
             cursor: not-allowed;
         }
 
-        .file-toolbar, .editor-toolbar, .task-manager-toolbar, .notepad-toolbar {
+        .file-toolbar, .editor-toolbar, .task-manager-toolbar, .notepad-toolbar, .python-toolbar {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
@@ -778,6 +778,51 @@
         .context-menu-item:hover {
             background: #f0f0f0;
         }
+
+        /* Python App Specific Styles */
+        .python-app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        .python-editor-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .python-editor-container .CodeMirror {
+            height: 100%;
+        }
+        .python-output {
+            background-color: #1a1a1a;
+            color: #00ff00;
+            padding: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            border-radius: 6px;
+            height: 150px; /* Fixed height for output */
+            border: 1px solid #555;
+            box-sizing: border-box;
+        }
+        .python-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .python-toolbar input[type="text"] {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: var(--window-content-bg, white);
+            color: var(--window-content-text-color, #333);
+        }
     </style>
 </head>
 <body>
@@ -798,6 +843,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/markdown/markdown.min.js"></script>
+<!-- Pyodide CDN -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
+
 
 <script>
 
@@ -809,7 +857,11 @@ function openFileInNotepad(filePath) {
 
     const fileData = OS.files.get(filePath);
     if (fileData && fileData.content !== undefined) {
-        initializeNotepadEditor(fileData.content, OS.settings.notepadMode);
+        // Determine mode based on file extension for syntax highlighting
+        const fileName = filePath.split('/').pop();
+        const mode = getCodeMirrorModeForFile(fileName);
+        
+        initializeNotepadEditor(fileData.content, mode);
         currentNotepadFileName = filePath;
 
         // Update window title to reflect the opened file
@@ -886,9 +938,16 @@ function editFileCmd(filePath) {
             currentDirectory: '/' // For Cmd app
         };
 
-        // Global variable to hold the current CodeMirror instance
+        // Global variable to hold the current CodeMirror instance for Notepad
         let currentCodeMirrorEditor = null;
         let currentNotepadFileName = null; // To keep track of the file open in Notepad/HTML Editor
+
+        // Global variable for Python CodeMirror instance
+        let pythonCodeMirrorEditor = null;
+        // Global variable for Pyodide instance
+        let pyodide = null;
+        let pyodidePromise = null; // To ensure pyodide loads only once
+
 
         // Function to get safe area insets (fallback for older browsers)
         function getSafeAreaInsets() {
@@ -1004,7 +1063,7 @@ function editFileCmd(filePath) {
                 {
                     id: 'task-manager',
                     name: 'Task Manager',
-                    emoji: '📊',
+                    emoji: '�',
                     description: 'Monitor and manage running applications',
                     type: 'system'
                 },
@@ -1027,6 +1086,13 @@ function editFileCmd(filePath) {
                     name: 'Notepad',
                     emoji: '📝',
                     description: 'Simple text editor with advanced features',
+                    type: 'system'
+                },
+                {
+                    id: 'python-ide', // New Python IDE app
+                    name: 'Python IDE',
+                    emoji: '🐍',
+                    description: 'Run Python code and install libraries',
                     type: 'system'
                 }
             ];
@@ -1259,7 +1325,7 @@ function editFileCmd(filePath) {
             } else if (app.id === 'calculator') {
                 content = createCalculatorContent();
                 windowContentDiv.innerHTML = content;
-            } else if (app.id === 'notepad' || app.id === 'html-editor') { // Consolidated for text/HTML editing
+            } else if (app.id === 'notepad') { // Notepad app - separate from HTML editor for general text
                 content = createNotepadContent(); // Reuse notepad content structure
                 windowContentDiv.innerHTML = content;
                 const filePath = options.filePath || null; // Get file path from options
@@ -1276,8 +1342,17 @@ function editFileCmd(filePath) {
                     if (filePath) {
                         const titleSpan = window.querySelector('.window-title span:last-child');
                         if (titleSpan) titleSpan.textContent = `${app.emoji} ${filePath.split('/').pop()}`;
+                    } else {
+                        // For a new, unsaved Notepad document
+                        const titleSpan = window.querySelector('.window-title span:last-child');
+                        if (titleSpan) titleSpan.textContent = `${app.emoji} Untitled`;
                     }
                 }, 0); 
+            }
+            else if (app.id === 'python-ide') {
+                content = createPythonAppContent();
+                windowContentDiv.innerHTML = content;
+                setTimeout(initializePythonEditor, 0); // Initialize Python editor
             }
             else if (app.htmlUrl) { // Handle external URLs
                 const iframeId = `frame-${windowId}`;
@@ -1777,7 +1852,27 @@ function editFileCmd(filePath) {
                 case 'css': return 'text/css';
                 case 'json': return 'application/json';
                 case 'md': return 'text/markdown';
+                case 'py': return 'text/x-python'; // Python files
                 default: return 'text/plain';
+            }
+        }
+
+        // Helper to get CodeMirror mode based on file extension
+        function getCodeMirrorModeForFile(fileName) {
+            const parts = fileName.split('.');
+            const extension = parts.length > 1 ? parts.pop().toLowerCase() : '';
+            switch (extension) {
+                case 'html':
+                case 'htm': return 'htmlmixed';
+                case 'js': return 'javascript';
+                case 'css': return 'css';
+                case 'json': return { name: 'javascript', json: true }; // Use javascript mode for JSON
+                case 'md': return 'markdown';
+                case 'py': return 'python';
+                case 'c':
+                case 'cpp':
+                case 'java': return 'clike';
+                default: return 'null'; // Plain text mode
             }
         }
 
@@ -1971,7 +2066,7 @@ function editFileCmd(filePath) {
             const parts = fileName.split('.');
             const extension = parts.length > 1 ? parts.pop().toLowerCase() : '';
             switch (extension) {
-                case 'txt': return '�';
+                case 'txt': return '📄';
                 case 'html':
                 case 'htm': return '🌐';
                 case 'js': return '📜';
@@ -2995,6 +3090,7 @@ case 'edit':
                     indentWithTabs: false,
                     lineWrapping: true,
                 });
+                // Crucial for CodeMirror to correctly render after content or size changes
                 currentCodeMirrorEditor.refresh();
 
                 // Set selected values in dropdowns
@@ -3079,6 +3175,7 @@ case 'edit':
                         }
                         const content = currentCodeMirrorEditor ? currentCodeMirrorEditor.getValue() : '';
                         OS.files.set(newFullPath, {
+                            name: fileName.trim(), // Add name property
                             content: content,
                             modified: Date.now(),
                             type: getMimeType(fileName.split('.').pop()) // Determine type based on extension
@@ -3105,10 +3202,13 @@ case 'edit':
                 const content = currentCodeMirrorEditor.getValue();
                 const fileToSavePath = currentNotepadFileName || fullPath; // Prioritize current open file, fallback to argument
                 if (fileToSavePath) {
+                    // Ensure the 'name' property is also updated or retained
+                    const existingFileData = OS.files.get(fileToSavePath) || {};
                     OS.files.set(fileToSavePath, {
+                        ...existingFileData, // Keep existing properties
                         content: content,
                         modified: Date.now(),
-                        type: OS.files.get(fileToSavePath)?.type || getMimeType(fileToSavePath.split('.').pop())
+                        type: existingFileData.type || getMimeType(fileToSavePath.split('.').pop())
                     });
                     saveFiles(); // This will now fail silently
                     updateFileList();
@@ -3310,7 +3410,146 @@ case 'edit':
             if (currentCodeMirrorEditor) {
                 currentCodeMirrorEditor.refresh();
             }
+            // Refresh Python CodeMirror editor if open
+            if (pythonCodeMirrorEditor) {
+                pythonCodeMirrorEditor.refresh();
+            }
         });
+
+        // Python App functionality
+        function createPythonAppContent() {
+            return `
+                <div class="python-app">
+                    <div class="python-toolbar">
+                        <button class="toolbar-btn" onclick="runPythonCode()">▶️ Run Code</button>
+                        <input type="text" id="python-package-input" placeholder="Package name (e.g., numpy)">
+                        <button class="toolbar-btn" onclick="installPythonPackage()">📦 Install Package</button>
+                        <button class="toolbar-btn" onclick="clearPythonOutput()">🧹 Clear Output</button>
+                    </div>
+                    <div class="python-editor-container">
+                        <div id="python-editor-main-container" class="codemirror-container"></div>
+                    </div>
+                    <div id="python-output" class="python-output"></div>
+                </div>
+            `;
+        }
+
+        async function initializePythonEditor() {
+            const editorContainer = document.getElementById('python-editor-main-container');
+            if (editorContainer) {
+                editorContainer.innerHTML = ''; // Clear previous editor instance
+                pythonCodeMirrorEditor = CodeMirror(editorContainer, {
+                    value: 'print("Hello from Python!")\n# You can install packages like: micropip.install("numpy")',
+                    mode: 'python',
+                    theme: 'dracula', // Can be made configurable via settings later
+                    lineNumbers: true,
+                    indentUnit: 4,
+                    tabSize: 4,
+                    indentWithTabs: false,
+                    lineWrapping: true,
+                });
+                pythonCodeMirrorEditor.refresh();
+
+                // Load Pyodide if not already loaded
+                if (!pyodidePromise) {
+                    pyodidePromise = loadPyodide({
+                        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.25.0/full/",
+                        // Redirect stdout/stderr to our custom output area
+                        stdout: (text) => pythonOutput(text),
+                        stderr: (text) => pythonOutput(text, true),
+                    }).then(async (instance) => {
+                        pyodide = instance;
+                        // Load micropip for package management
+                        await pyodide.loadPackage("micropip");
+                        pythonOutput("Pyodide and micropip loaded. You can now run Python code and install packages.");
+                        return pyodide;
+                    }).catch(error => {
+                        pythonOutput(`Error loading Pyodide: ${error}`, true);
+                        console.error("Error loading Pyodide:", error);
+                        pyodidePromise = null; // Allow retrying load
+                    });
+                }
+                // Wait for Pyodide to be ready (if not already)
+                await pyodidePromise;
+            }
+        }
+
+        function pythonOutput(text, isError = false) {
+            const outputElement = document.getElementById('python-output');
+            if (outputElement) {
+                const span = document.createElement('span');
+                span.style.color = isError ? 'red' : 'inherit';
+                span.textContent = text + '\n';
+                outputElement.appendChild(span);
+                outputElement.scrollTop = outputElement.scrollHeight; // Scroll to bottom
+            }
+        }
+
+        async function runPythonCode() {
+            const outputElement = document.getElementById('python-output');
+            if (!outputElement) return;
+
+            outputElement.innerHTML = ''; // Clear previous output
+            pythonOutput("Running Python code...", false);
+
+            if (!pyodide) {
+                pythonOutput("Pyodide is not loaded. Please wait or refresh the app.", true);
+                return;
+            }
+
+            try {
+                const code = pythonCodeMirrorEditor.getValue();
+                const result = await pyodide.runPythonAsync(code);
+                if (result !== undefined) {
+                    pythonOutput(`Result: ${result}`);
+                }
+            } catch (error) {
+                pythonOutput(`Error during execution: ${error.message || error}`, true);
+                console.error("Python execution error:", error);
+            }
+        }
+
+        async function installPythonPackage() {
+            const packageName = document.getElementById('python-package-input').value.trim();
+            if (!packageName) {
+                pythonOutput("Please enter a package name to install.", true);
+                return;
+            }
+
+            const outputElement = document.getElementById('python-output');
+            if (!outputElement) return;
+
+            pythonOutput(`Attempting to install package: ${packageName}...`);
+
+            if (!pyodide) {
+                pythonOutput("Pyodide is not loaded. Please wait or refresh the app.", true);
+                return;
+            }
+
+            try {
+                // micropip is loaded via pyodide.loadPackage("micropip") in initializePythonEditor
+                await pyodide.runPythonAsync(`
+                    import micropip
+                    await micropip.install('${packageName}')
+                `);
+                pythonOutput(`Successfully installed ${packageName}.`);
+            } catch (error) {
+                pythonOutput(`Error installing ${packageName}: ${error.message || error}`, true);
+                console.error("Package installation error:", error);
+            } finally {
+                document.getElementById('python-package-input').value = ''; // Clear input
+            }
+        }
+
+        function clearPythonOutput() {
+            const outputElement = document.getElementById('python-output');
+            if (outputElement) {
+                outputElement.innerHTML = '';
+                pythonOutput("Output cleared.");
+            }
+        }
+
     </script>
 </body>
 </html>
+�
