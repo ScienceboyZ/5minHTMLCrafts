@@ -800,6 +800,46 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/markdown/markdown.min.js"></script>
 
 <script>
+
+function openFileInNotepad(filePath) {
+    if (!filePath || !OS.files.has(filePath)) {
+        showAlert('Error', 'File not found.');
+        return;
+    }
+
+    const fileData = OS.files.get(filePath);
+    if (fileData && fileData.content !== undefined) {
+        initializeNotepadEditor(fileData.content, OS.settings.notepadMode);
+        currentNotepadFileName = filePath;
+
+        // Update window title to reflect the opened file
+        const notepadWindow = document.querySelector('.notepad-app').closest('.window');
+        if (notepadWindow) {
+            const titleSpan = notepadWindow.querySelector('.window-title span:last-child');
+            if (titleSpan) titleSpan.textContent = `📝 ${fileData.name}`;
+        }
+    } else {
+        showAlert('Error', 'Could not load file content.');
+    }
+}
+
+function editFileCmd(filePath) {
+    const fileData = OS.files.get(filePath);
+    if (!fileData || typeof fileData.content === 'undefined') {
+        updateCmdOutput(`edit: Error opening file: ${filePath}`, true);
+        return;
+    }
+
+    showPrompt(`Editing: ${fileData.name}`, 'Enter new file contents:', fileData.content, (newContent) => {
+        if (newContent !== null) {
+            fileData.content = newContent;
+            fileData.modified = Date.now();
+            saveFiles();
+            updateCmdOutput(`File updated: ${fileData.name}`);
+        }
+    });
+}
+
         // Global state management
         const OS = {
             windows: new Map(),
