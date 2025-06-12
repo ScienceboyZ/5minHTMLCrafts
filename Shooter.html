@@ -1,127 +1,347 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>iPad Shooter Game</title>
-    <style>
-        body {
-            text-align: center;
-            background-color: #222;
-            color: white;
-            font-family: Arial, sans-serif;
-            touch-action: manipulation; /* Improves touch responsiveness */
-        }
-        #gameArea {
-            position: relative;
-            width: 90vw; /* Responsive width */
-            height: 60vh; /* Responsive height */
-            background-color: black;
-            border: 2px solid white;
-            margin: auto;
-            overflow: hidden;
-            touch-action: none; /* Prevents scrolling while playing */
-        }
-        .target {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background-color: red;
-            border-radius: 50%;
-        }
-        .bullet {
-            position: absolute;
-            width: 15px;
-            height: 30px;
-            background-color: yellow;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Shooter with Levels</title>
+  <style>
+    body {
+      text-align: center;
+      background: #222;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      touch-action: manipulation;
+    }
+    #gameArea {
+      position: relative;
+      width: 90vw;
+      height: 60vh;
+      margin: 1em auto;
+      background: #000;
+      border: 2px solid #fff;
+      overflow: hidden;
+      touch-action: none;
+      display: none;
+    }
+    #menu, #shop, #levels {
+      display: none;
+    }
+    .button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 18px;
+      background: #444;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+    }
+    .button:hover { background: #666; }
+    .target {
+      position: absolute;
+      background: red;
+      border-radius: 50%;
+    }
+    .bullet {
+      position: absolute;
+      width: 15px;
+      height: 30px;
+      background: yellow;
+    }
+    .locked {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
-    <h1>iPad Shooter Game</h1>
-    <p>Tap inside the game area to shoot!</p>
-    <p>Score: <span id="score">0</span></p>
-    <div id="gameArea"></div>
 
-    <script>
-        const gameArea = document.getElementById("gameArea");
-        const scoreDisplay = document.getElementById("score");
-        let score = 0;
+  <!-- MENU -->
+  <div id="menu">
+    <h1>Shooter Game</h1>
+    <button class="button" id="startBtn">Start Standard</button>
+    <button class="button" id="shopBtn">Shop</button>
+    <button class="button" id="levelsBtn">Levels</button>
+  </div>
 
-        // Create a moving target with random movement
-        function createTarget() {
-            const target = document.createElement("div");
-            target.classList.add("target");
-            gameArea.appendChild(target);
+  <!-- SHOP -->
+  <div id="shop">
+    <h1>Shop</h1>
+    <p>Coins: <span id="shopCoins">0</span></p>
+    <button class="button" id="buySpeed">Increase Target Speed (5)</button><br>
+    <button class="button" id="buyPistol">Buy Pistol (5) – spd 10</button>
+    <button class="button" id="buyRifle">Buy Rifle (10) – spd 20</button>
+    <button class="button" id="buySniper">Buy Sniper (20) – spd 30</button><br>
+    <button class="button" id="backFromShop">Back to Menu</button>
+  </div>
 
-            let x = Math.random() * (gameArea.clientWidth - 50);
-            let y = Math.random() * (gameArea.clientHeight - 50);
-            let dx = (Math.random() * 6) - 3; // Faster random speed in x direction
-            let dy = (Math.random() * 6) - 3; // Faster random speed in y direction
+  <!-- LEVEL SELECT -->
+  <div id="levels">
+    <h1>Select Level</h1>
+    <button class="button lvlBtn" data-level="standard">Standard</button><br>
+    <button class="button lvlBtn" data-level="advanced">Advanced (Unlock @25)</button><br>
+    <button class="button lvlBtn" data-level="dodger">Dodger (Unlock @200)</button><br>
+    <button class="button" id="backFromLevels">Back to Menu</button>
+  </div>
 
-            function moveTarget() {
-                x += dx;
-                y += dy;
+  <!-- GAME AREA -->
+  <div id="gameArea">
+    <p>
+      Level: <span id="levelLabel"></span> |
+      Score: <span id="score">0</span> |
+      Coins: <span id="gameCoins">0</span>
+    </p>
+    <button class="button" id="backToMenu">Menu</button>
+  </div>
 
-                // Bounce off walls
-                if (x <= 0 || x >= gameArea.clientWidth - 50) dx = (Math.random() * 6) - 3;
-                if (y <= 0 || y >= gameArea.clientHeight - 50) dy = (Math.random() * 6) - 3;
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // DOM refs
+    const menu         = document.getElementById('menu');
+    const shop         = document.getElementById('shop');
+    const levels       = document.getElementById('levels');
+    const gameArea     = document.getElementById('gameArea');
 
-                target.style.left = x + "px";
-                target.style.top = y + "px";
+    const startBtn     = document.getElementById('startBtn');
+    const shopBtn      = document.getElementById('shopBtn');
+    const levelsBtn    = document.getElementById('levelsBtn');
+    const backFromShop = document.getElementById('backFromShop');
+    const backFromLv   = document.getElementById('backFromLevels');
+    const backToMenu   = document.getElementById('backToMenu');
 
-                requestAnimationFrame(moveTarget);
+    const buySpeed     = document.getElementById('buySpeed');
+    const buyPistol    = document.getElementById('buyPistol');
+    const buyRifle     = document.getElementById('buyRifle');
+    const buySniper    = document.getElementById('buySniper');
+
+    const shopCoinsEl  = document.getElementById('shopCoins');
+    const gameCoinsEl  = document.getElementById('gameCoins');
+    const scoreEl      = document.getElementById('score');
+    const levelLabel   = document.getElementById('levelLabel');
+    const lvlButtons   = document.querySelectorAll('.lvlBtn');
+
+    // State
+    let score           = 0;
+    let coins           = parseInt(localStorage.getItem('coins')) || 0;
+    let maxScore        = parseInt(localStorage.getItem('maxScore')) || 0;
+    let speedMultiplier = parseFloat(localStorage.getItem('speedMultiplier')) || 1;
+    let bulletSpeed     = parseInt(localStorage.getItem('bulletSpeed')) || 10;
+    let currentLevel    = 'standard';
+
+    let bullets = [];
+    let targets = [];
+    let listenersBound = false;
+
+    // Helpers
+    function showScreen(el) {
+      [menu, shop, levels, gameArea].forEach(x => x.style.display = 'none');
+      el.style.display = 'block';
+    }
+
+    function saveState() {
+      localStorage.setItem('coins', coins);
+      localStorage.setItem('maxScore', maxScore);
+      localStorage.setItem('speedMultiplier', speedMultiplier);
+      localStorage.setItem('bulletSpeed', bulletSpeed);
+    }
+
+    function updateDisplays() {
+      shopCoinsEl.textContent = coins;
+      gameCoinsEl.textContent = coins;
+      scoreEl.textContent     = score;
+
+      lvlButtons.forEach(btn => {
+        const lvl = btn.dataset.level;
+        if (lvl === 'advanced' && maxScore < 25) btn.classList.add('locked');
+        else if (lvl === 'dodger' && maxScore < 200) btn.classList.add('locked');
+        else btn.classList.remove('locked');
+      });
+    }
+
+    function isColliding(a, b) {
+      const r1 = a.getBoundingClientRect(), r2 = b.getBoundingClientRect();
+      return !(r2.left > r1.right ||
+               r2.right < r1.left ||
+               r2.top > r1.bottom ||
+               r2.bottom < r1.top);
+    }
+
+    // Entities
+    class Target {
+      constructor({ size=50, dodge=false } = {}) {
+        this.size  = size;
+        this.dodge = dodge;
+        this.el = document.createElement('div');
+        this.el.className = 'target';
+        this.el.style.width  = size + 'px';
+        this.el.style.height = size + 'px';
+        gameArea.appendChild(this.el);
+
+        this.x = Math.random()*(gameArea.clientWidth-size);
+        this.y = Math.random()*(gameArea.clientHeight-size);
+        const base = Math.random()*3+2;
+        this.dx = base*speedMultiplier * (Math.random()<.5?-1:1);
+        this.dy = (base+1)*speedMultiplier * (Math.random()<.5?-1:1);
+
+        this.raf = null;
+        this.move();
+      }
+
+      move() {
+        // dodger logic
+        if (this.dodge) {
+          bullets.forEach(b => {
+            const bx = b.el.offsetLeft, by = b.el.offsetTop;
+            if (by > this.y && Math.abs(bx-this.x) < 100) {
+              this.dx = (this.x > bx? 1:-1)*Math.abs(this.dx);
+              this.dy = (this.y > by? 1:-1)*Math.abs(this.dy);
             }
-
-            // Change direction randomly every 500ms
-            setInterval(() => {
-                dx = (Math.random() * 6) - 3;
-                dy = (Math.random() * 6) - 3;
-            }, 500);
-
-            moveTarget();
+          });
         }
 
-        // Shoot bullets (works with touch)
-        function shoot(event) {
-            const bullet = document.createElement("div");
-            bullet.classList.add("bullet");
+        this.x += this.dx; this.y += this.dy;
+        if (this.x < 0 || this.x > gameArea.clientWidth - this.size) this.dx *= -1;
+        if (this.y < 0 || this.y > gameArea.clientHeight - this.size) this.dy *= -1;
+        this.el.style.left = this.x + 'px';
+        this.el.style.top  = this.y + 'px';
+        this.raf = requestAnimationFrame(()=>this.move());
+      }
 
-            // Get touch position for iPad
-            let touchX = event.clientX || event.touches[0].clientX;
-            bullet.style.left = touchX - gameArea.offsetLeft + "px";
-            bullet.style.top = gameArea.clientHeight - 30 + "px";
-            gameArea.appendChild(bullet);
+      remove() {
+        cancelAnimationFrame(this.raf);
+        this.el.remove();
+      }
+    }
 
-            let interval = setInterval(() => {
-                bullet.style.top = bullet.offsetTop - 15 + "px"; // Faster bullet speed
+    class Bullet {
+      constructor(x) {
+        this.el = document.createElement('div');
+        this.el.className = 'bullet';
+        this.el.style.left = (x - 7) + 'px';
+        this.el.style.top  = (gameArea.clientHeight - 30) + 'px';
+        gameArea.appendChild(this.el);
+        bullets.push(this);
+        this.step();
+      }
+      step() {
+        const y = this.el.offsetTop - bulletSpeed;
+        if (y < -30) return this.destroy();
+        this.el.style.top = y + 'px';
 
-                // Check collision with target
-                const target = document.querySelector(".target");
-                if (target && bullet.offsetTop <= target.offsetTop + 50 &&
-                    bullet.offsetLeft >= target.offsetLeft &&
-                    bullet.offsetLeft <= target.offsetLeft + 50) {
-                   
-                    gameArea.removeChild(target);
-                    gameArea.removeChild(bullet);
-                    score++;
-                    scoreDisplay.textContent = score;
-                    createTarget(); // Spawn new target
-                    clearInterval(interval);
-                }
-
-                // Remove bullet if it goes off screen
-                if (bullet.offsetTop < 0) {
-                    gameArea.removeChild(bullet);
-                    clearInterval(interval);
-                }
-            }, 30); // Faster bullet movement
+        for (let t of targets) {
+          if (isColliding(this.el, t.el)) {
+            this.destroy();
+            onHit(t);
+            return;
+          }
         }
+        requestAnimationFrame(()=>this.step());
+      }
+      destroy() {
+        this.el.remove();
+        bullets = bullets.filter(b=>b!==this);
+      }
+    }
 
-        // Start game
-        createTarget();
-        gameArea.addEventListener("click", shoot);
-        gameArea.addEventListener("touchstart", shoot); // Enables touch shooting
+    // Game Logic
+    function clearAll() {
+      bullets.forEach(b=>b.destroy());
+      targets.forEach(t=>t.remove());
+      bullets = []; targets = [];
+    }
 
-    </script>
+    function spawnTargets() {
+      clearAll();
+      if (currentLevel === 'standard') {
+        targets.push(new Target());
+      } else if (currentLevel === 'advanced') {
+        for (let i = 0; i < 4; i++) targets.push(new Target({ size:30 }));
+      } else if (currentLevel === 'dodger') {
+        targets.push(new Target({ dodge:true }));
+      }
+    }
+
+    function onHit(target) {
+      target.remove();
+      targets = targets.filter(t=>t!==target);
+
+      score++; coins++; speedMultiplier += 0.5;
+      if (score > maxScore) maxScore = score;
+      updateDisplays();
+      saveState();
+
+      // spawn next
+      if (currentLevel==='advanced') {
+        // keep 4 small
+        for (let i = targets.length; i < 4; i++)
+          targets.push(new Target({ size:30 }));
+      } else {
+        spawnTargets();
+      }
+    }
+
+    function onShoot(e) {
+      const rect = gameArea.getBoundingClientRect();
+      const x = ((e.clientX||e.touches[0].clientX) - rect.left);
+      new Bullet(x);
+    }
+
+    function bindGame() {
+      if (listenersBound) return;
+      gameArea.addEventListener('click', onShoot);
+      gameArea.addEventListener('touchstart', onShoot);
+      listenersBound = true;
+    }
+
+    function startGame(level) {
+      currentLevel = level;
+      score = 0;
+      levelLabel.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+      updateDisplays();
+      bindGame();
+      spawnTargets();
+      showScreen(gameArea);
+    }
+
+    // Shop actions
+    function buySpeedUp() {
+      if (coins < 5) return alert('Not enough coins');
+      coins -= 5; speedMultiplier += 1;
+      updateDisplays(); saveState();
+      alert('Speed Upgraded!');
+    }
+    function buyGun(cost, spd, name) {
+      if (coins < cost) return alert('Not enough coins');
+      coins -= cost; bulletSpeed = spd;
+      updateDisplays(); saveState();
+      alert(`${name} bought! Bullet speed ${spd}`);
+    }
+
+    // Hook up menu buttons
+    startBtn.addEventListener('click', ()=> startGame('standard'));
+    shopBtn .addEventListener('click', ()=> { updateDisplays(); showScreen(shop); });
+    levelsBtn.addEventListener('click', ()=> { updateDisplays(); showScreen(levels); });
+    backFromShop.addEventListener('click', ()=> { saveState(); showScreen(menu); });
+    backFromLv .addEventListener('click', ()=> showScreen(menu));
+    backToMenu.addEventListener('click', ()=> { clearAll(); saveState(); showScreen(menu); });
+
+    buySpeed .addEventListener('click', buySpeedUp);
+    buyPistol.addEventListener('click', ()=>buyGun(5, 10, 'Pistol'));
+    buyRifle .addEventListener('click', ()=>buyGun(10,20, 'Rifle'));
+    buySniper.addEventListener('click', ()=>buyGun(20,30, 'Sniper'));
+
+    lvlButtons.forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const lvl = btn.dataset.level;
+        if ((lvl==='advanced' && maxScore<25) ||
+            (lvl==='dodger'  && maxScore<200)) return;
+        startGame(lvl);
+      });
+    });
+
+    // show main menu at startup
+    showScreen(menu);
+    updateDisplays();
+  });
+  </script>
+
 </body>
 </html>
