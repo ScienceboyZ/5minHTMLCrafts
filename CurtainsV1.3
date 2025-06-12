@@ -1045,18 +1045,18 @@ function editFileCmd(filePath) {
             applySettings(); // Apply settings to CSS variables
             loadInstalledApps(); // Load locally installed apps
 
-            // Synchronize system apps from the remote source
-            await syncSystemApps(); // Wait for sync to complete before updating desktop icons and launching startup apps
-            
-            // Fallback: If no apps are installed after loading from storage and syncing, install default apps
+            // Original automatic app updates removed - now always rely on defaultSystemApps if no apps are found
+            // await syncSystemApps(); // Removed this line
+
+            // Fallback: If no apps are installed after loading from storage, install default apps
             if (OS.installedApps.size === 0) {
-                console.log("No apps found after sync. Installing default system apps.");
+                console.log("No apps found after loading. Installing default system apps.");
                 defaultSystemApps.forEach(app => {
                     const appId = generateAppId(app.name);
                     OS.installedApps.set(appId, { ...app, id: appId });
                 });
                 saveInstalledApps();
-                showAlert('Default Apps Installed', 'Could not sync with the app store. Default applications have been installed.');
+                showAlert('Default Apps Installed', 'System applications have been installed.');
             }
 
             updateDesktopIcons();
@@ -1078,14 +1078,14 @@ function editFileCmd(filePath) {
             });
         }
 
-        // Default apps installation - now handled by syncSystemApps for dynamic updates
+        // Default apps installation - now handled directly in finishOSInitialization
         function installDefaultApps() {
-            // This function is now largely replaced by syncSystemApps
-            // It remains for initial setup if no apps are found, ensuring syncSystemApps is always called.
-            // When syncSystemApps runs, it will populate the default system apps.
+            // This function is now entirely replaced by the logic in finishOSInitialization.
+            // It is kept as a placeholder but its contents are effectively inlined there.
         }
 
-        // New function to synchronize system apps with a remote source
+        // Removed the syncSystemApps function entirely as per user request
+        /*
         async function syncSystemApps() {
             let updatesApplied = false;
             try {
@@ -1149,6 +1149,7 @@ function editFileCmd(filePath) {
                 showAlert('App Sync Failed', `Could not connect to the app store to get latest apps. Error: ${error.message}`);
             }
         }
+        */
 
 
         // Storage functions (no try...catch for silent failure in file:// contexts)
@@ -1411,16 +1412,22 @@ function editFileCmd(filePath) {
             } else if (app.id === 'cmd') {
                 content = createCmdContent();
                 windowContentDiv.innerHTML = content;
+                // Increased timeout slightly for better DOM readiness
                 setTimeout(() => {
+                    console.log("CMD: Attempting to find cmd-input...");
                     const cmdInput = document.getElementById('cmd-input');
                     if (cmdInput) {
+                        console.log("CMD: cmd-input found. Focusing and adding listener.");
                         cmdInput.focus(); 
                         if (!cmdInput.dataset.listenerAdded) {
                             cmdInput.addEventListener('keydown', handleCmdInput);
                             cmdInput.dataset.listenerAdded = 'true';
                         }
+                    } else {
+                        console.error("CMD: cmd-input NOT found!");
+                        showAlert("Error", "Command Prompt input area not found. Cannot initialize.");
                     }
-                }, 0); 
+                }, 50); 
             } else if (app.id === 'calculator') {
                 content = createCalculatorContent();
                 windowContentDiv.innerHTML = content;
@@ -1433,20 +1440,29 @@ function editFileCmd(filePath) {
                 const initialContent = options.initialPythonCode || (filePath ? OS.files.get(filePath).content : '');
                 const mode = options.startInPythonMode ? 'python' : (filePath ? getCodeMirrorModeForFile(filePath.split('/').pop()) : OS.settings.notepadMode);
                 
+                // Increased timeout slightly for better DOM readiness
                 setTimeout(() => {
-                    initializeNotepadEditor(initialContent, mode, options.startInPythonMode);
-                    // Adjust window title for Python app redirection
-                    if (options.startInPythonMode) {
-                        const titleSpan = window.querySelector('.window-title span:last-child');
-                        if (titleSpan) titleSpan.textContent = `${options.originalAppEmoji || '🐍'} ${options.originalAppName || 'Python Editor'}`;
-                    } else if (filePath) {
-                        const titleSpan = window.querySelector('.window-title span:last-child');
-                        if (titleSpan) titleSpan.textContent = `${app.emoji} ${filePath.split('/').pop()}`;
+                    console.log("Notepad: Attempting to find notepad-editor-main-container...");
+                    const editorContainer = document.getElementById('notepad-editor-main-container');
+                    if (editorContainer) {
+                        console.log("Notepad: editorContainer found. Initializing editor.");
+                        initializeNotepadEditor(initialContent, mode, options.startInPythonMode);
+                        // Adjust window title for Python app redirection
+                        if (options.startInPythonMode) {
+                            const titleSpan = window.querySelector('.window-title span:last-child');
+                            if (titleSpan) titleSpan.textContent = `${options.originalAppEmoji || '🐍'} ${options.originalAppName || 'Python Editor'}`;
+                        } else if (filePath) {
+                            const titleSpan = window.querySelector('.window-title span:last-child');
+                            if (titleSpan) titleSpan.textContent = `${app.emoji} ${filePath.split('/').pop()}`;
+                        } else {
+                            const titleSpan = window.querySelector('.window-title span:last-child');
+                            if (titleSpan) titleSpan.textContent = `${app.emoji} Untitled`;
+                        }
                     } else {
-                        const titleSpan = window.querySelector('.window-title span:last-child');
-                        if (titleSpan) titleSpan.textContent = `${app.emoji} Untitled`;
+                        console.error("Notepad: notepad-editor-main-container NOT found!");
+                        showAlert("Error", "Notepad editor area not found. Cannot initialize.");
                     }
-                }, 0); 
+                }, 50); 
             }
             else if (app.htmlUrl) {
                 const iframeId = `frame-${windowId}`;
@@ -1785,6 +1801,8 @@ function editFileCmd(filePath) {
             if (!contentDiv) return;
 
             try {
+                // This will still attempt to fetch, but syncSystemApps is removed from init
+                // If you want to entirely remove the fetch from the App Store, this part needs removal too.
                 const response = await fetch('https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/apps.json');
                 if (!response.ok) {
                     throw new Error('Failed to fetch app data');
@@ -2158,7 +2176,7 @@ function editFileCmd(filePath) {
             const parts = fileName.split('.');
             const extension = parts.length > 1 ? parts.pop().toLowerCase() : '';
             switch (extension) {
-                case 'txt': return '📄';
+                case 'txt': return '�';
                 case 'html':
                 case 'htm': return '🌐';
                 case 'js': return '📜';
@@ -3556,7 +3574,7 @@ function editFileCmd(filePath) {
             }
             if (window.modalCallback && typeof window.modalCallback.callback === 'function') {
                 // If it expects a text value, pass null for cancel. Otherwise, pass the boolean result.
-                window.modalCallback.callback(window.modalCallback.expectsTextValue ? null : result); 
+                window.modalCallback.callback(window.modalCallback.expectsTextValue ? (modal.querySelector('#modal-input') ? modal.querySelector('#modal-input').value : null) : result); 
             }
             window.modalCallback = null;
         }
@@ -3680,3 +3698,4 @@ function editFileCmd(filePath) {
     </script>
 </body>
 </html>
+�
