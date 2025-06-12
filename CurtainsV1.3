@@ -1002,16 +1002,13 @@ function editFileCmd(filePath) {
         }
 
         // Separate function for the rest of OS initialization
-        function finishOSInitialization() {
+        async function finishOSInitialization() {
             loadSettings(); // Load settings (will be default if cleared)
             applySettings(); // Apply settings to CSS variables
-            loadInstalledApps();
-            loadFiles();
-            
-            // Install default apps if first run
-            if (OS.installedApps.size === 0) {
-                installDefaultApps();
-            }
+            loadInstalledApps(); // Load locally installed apps
+
+            // Synchronize system apps from the remote source
+            await syncSystemApps(); // Wait for sync to complete before updating desktop icons and launching startup apps
             
             updateDesktopIcons();
             
@@ -1030,79 +1027,81 @@ function editFileCmd(filePath) {
                     launchApp(appId);
                 }
             });
-
-            // Initialize CMD app event listener if it's open or about to be opened
-            // This is just to ensure it's set up once the app is launched.
-            // The actual focus will be handled by launchApp -> createCmdContent
         }
 
-        // Default apps installation
+        // Default apps installation - now handled by syncSystemApps for dynamic updates
         function installDefaultApps() {
-            const defaultApps = [
-                {
-                    id: 'app-store',
-                    name: 'App Store',
-                    emoji: '🛍️',
-                    description: 'Install new applications',
-                    type: 'system'
-                },
-                {
-                    id: 'file-explorer',
-                    name: 'File Explorer',
-                    emoji: '📁',
-                    description: 'Manage your files and folders',
-                    type: 'system'
-                },
-                {
-                    id: 'settings', // Renamed from 'customization'
-                    name: 'Settings',
-                    emoji: '⚙️',
-                    description: 'Personalize your OS',
-                    type: 'system'
-                },
-                {
-                    id: 'task-manager',
-                    name: 'Task Manager',
-                    emoji: '�',
-                    description: 'Monitor and manage running applications',
-                    type: 'system'
-                },
-                {
-                    id: 'cmd',
-                    name: 'CMD',
-                    emoji: '💻',
-                    description: 'Command Line Interface',
-                    type: 'system'
-                },
-                {
-                    id: 'calculator',
-                    name: 'Calculator',
-                    emoji: '🔢',
-                    description: 'Perform calculations',
-                    type: 'system'
-                },
-                {
-                    id: 'notepad', // Notepad app - separate from HTML editor for general text
-                    name: 'Notepad',
-                    emoji: '📝',
-                    description: 'Simple text editor with advanced features',
-                    type: 'system'
-                },
-                {
-                    id: 'python-ide', // New Python IDE app
-                    name: 'Python IDE',
-                    emoji: '🐍',
-                    description: 'Run Python code and install libraries',
-                    type: 'system'
-                }
-            ];
-
-            defaultApps.forEach(app => {
-                OS.installedApps.set(app.id, app);
-            });
-            
-            saveInstalledApps();
+            // This function is now largely replaced by syncSystemApps
+            // It remains for initial setup if no apps are found, ensuring syncSystemApps is always called.
+            // When syncSystemApps runs, it will populate the default system apps.
         }
+
+        // New function to synchronize system apps with a remote source
+        async function syncSystemApps() {
+            let updatesApplied = false;
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/apps.json');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch latest app data from remote source');
+                }
+                const remoteApps = await response.json();
+
+                remoteApps.forEach(remoteApp => {
+                    if (remoteApp.type === 'system') { // Only sync system apps
+                        const appId = generateAppId(remoteApp.name);
+                        const localApp = OS.installedApps.get(appId);
+
+                        if (!localApp) {
+                            // New system app found, install it
+                            OS.installedApps.set(appId, {
+                                id: appId,
+                                name: remoteApp.name,
+                                emoji: remoteApp.emoji,
+                                description: remoteApp.description,
+                                htmlUrl: remoteApp.htmlUrl || '',
+                                htmlContent: remoteApp.htmlContent || '',
+                                type: 'system'
+                            });
+                            updatesApplied = true;
+                            console.log(`Installed new system app: ${remoteApp.name}`);
+                        } else if (localApp.type === 'system') {
+                            // Existing system app, check for updates
+                            let needsUpdate = false;
+                            if (localApp.emoji !== remoteApp.emoji) needsUpdate = true;
+                            if (localApp.description !== remoteApp.description) needsUpdate = true;
+                            if (localApp.htmlUrl !== (remoteApp.htmlUrl || '')) needsUpdate = true;
+                            if (localApp.htmlContent !== (remoteApp.htmlContent || '')) needsUpdate = true;
+
+                            if (needsUpdate) {
+                                OS.installedApps.set(appId, {
+                                    id: appId,
+                                    name: remoteApp.name,
+                                    emoji: remoteApp.emoji,
+                                    description: remoteApp.description,
+                                    htmlUrl: remoteApp.htmlUrl || '',
+                                    htmlContent: remoteApp.htmlContent || '',
+                                    type: 'system'
+                                });
+                                updatesApplied = true;
+                                console.log(`Updated system app: ${remoteApp.name}`);
+                            }
+                        }
+                    }
+                });
+
+                if (updatesApplied) {
+                    saveInstalledApps(); // Save changes to local storage
+                    updateDesktopIcons(); // Refresh desktop icons
+                    showAlert('System Apps Updated', 'Some system applications have been updated automatically.');
+                }
+
+            } catch (error) {
+                console.error("Error synchronizing system apps:", error);
+                // No alert for this, as it's a background process and might happen often offline.
+                // The existing installed apps remain, which is desired.
+            }
+        }
+
 
         // Storage functions (no try...catch for silent failure in file:// contexts)
         function saveInstalledApps() {
@@ -2069,7 +2068,7 @@ function editFileCmd(filePath) {
                 case 'txt': return '📄';
                 case 'html':
                 case 'htm': return '🌐';
-                case 'js': return '📜';
+                case 'js': return ' ';
                 case 'css': return '🎨';
                 case 'json': return '💾';
                 case 'md': return '🗒️';
@@ -3552,4 +3551,4 @@ case 'edit':
     </script>
 </body>
 </html>
-�
+ 
