@@ -1044,10 +1044,8 @@ function editFileCmd(filePath) {
             loadSettings(); // Load settings (will be default if cleared)
             applySettings(); // Apply settings to CSS variables
             loadInstalledApps(); // Load locally installed apps
-
-            // Original automatic app updates removed - now always rely on defaultSystemApps if no apps are found
-            // await syncSystemApps(); // Removed this line
-
+            loadFiles(); // Load files after apps
+            
             // Fallback: If no apps are installed after loading from storage, install default apps
             if (OS.installedApps.size === 0) {
                 console.log("No apps found after loading. Installing default system apps.");
@@ -1078,172 +1076,59 @@ function editFileCmd(filePath) {
             });
         }
 
-        // Default apps installation - now handled directly in finishOSInitialization
-        function installDefaultApps() {
-            // This function is now entirely replaced by the logic in finishOSInitialization.
-            // It is kept as a placeholder but its contents are effectively inlined there.
-        }
-
-        // Removed the syncSystemApps function entirely as per user request
-        /*
-        async function syncSystemApps() {
-            let updatesApplied = false;
-            try {
-                const response = await fetch('https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/apps.json');
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch latest app data from remote source. Status: ${response.status}`);
-                }
-                const remoteApps = await response.json();
-
-                remoteApps.forEach(remoteApp => {
-                    if (remoteApp.type === 'system') { // Only sync system apps
-                        const appId = generateAppId(remoteApp.name);
-                        const localApp = OS.installedApps.get(appId);
-
-                        if (!localApp) {
-                            // New system app found, install it
-                            OS.installedApps.set(appId, {
-                                id: appId,
-                                name: remoteApp.name,
-                                emoji: remoteApp.emoji,
-                                description: remoteApp.description,
-                                htmlUrl: remoteApp.htmlUrl || '',
-                                htmlContent: remoteApp.htmlContent || '',
-                                type: 'system'
-                            });
-                            updatesApplied = true;
-                            console.log(`Installed new system app: ${remoteApp.name}`);
-                        } else if (localApp.type === 'system') {
-                            // Existing system app, check for updates
-                            let needsUpdate = false;
-                            if (localApp.emoji !== remoteApp.emoji) needsUpdate = true;
-                            if (localApp.description !== remoteApp.description) needsUpdate = true;
-                            if (localApp.htmlUrl !== (remoteApp.htmlUrl || '')) needsUpdate = true;
-                            if (localApp.htmlContent !== (remoteApp.htmlContent || '')) needsUpdate = true;
-
-                            if (needsUpdate) {
-                                OS.installedApps.set(appId, {
-                                    id: appId,
-                                    name: remoteApp.name,
-                                    emoji: remoteApp.emoji,
-                                    description: remoteApp.description,
-                                    htmlUrl: remoteApp.htmlUrl || '',
-                                    htmlContent: remoteApp.htmlContent || '',
-                                    type: 'system'
-                                });
-                                updatesApplied = true;
-                                console.log(`Updated system app: ${remoteApp.name}`);
-                            }
-                        }
-                    }
-                });
-
-                if (updatesApplied) {
-                    saveInstalledApps(); // Save changes to local storage
-                    updateDesktopIcons(); // Refresh desktop icons
-                    showAlert('System Apps Updated', 'Some system applications have been updated automatically.');
-                }
-
-            } catch (error) {
-                console.error("Error synchronizing system apps:", error);
-                showAlert('App Sync Failed', `Could not connect to the app store to get latest apps. Error: ${error.message}`);
-            }
-        }
-        */
-
-
-        // Storage functions (no try...catch for silent failure in file:// contexts)
+        // Storage functions (removed try...catch blocks as requested)
         function saveInstalledApps() {
-            try {
-                localStorage.setItem('htmlos-apps', JSON.stringify(Array.from(OS.installedApps.entries())));
-            } catch (e) {
-                console.error("Error saving installed apps to localStorage:", e);
-                // showAlert('Save Error', 'Could not save app data. Your browser might be blocking local storage access (e.g., in "file://" context).');
-            }
+            localStorage.setItem('htmlos-apps', JSON.stringify(Array.from(OS.installedApps.entries())));
         }
 
         function loadInstalledApps() {
             const saved = localStorage.getItem('htmlos-apps');
             if (saved) {
-                try {
-                    const apps = JSON.parse(saved);
-                    OS.installedApps = new Map(apps);
-                } catch (e) {
-                    console.error("Error parsing installed apps from localStorage:", e);
-                    localStorage.removeItem('htmlos-apps'); // Clear corrupted data
-                    // showAlert('Load Error', 'Corrupted app data found. Clearing and restarting app installation.');
-                }
+                const apps = JSON.parse(saved);
+                OS.installedApps = new Map(apps);
             }
         }
 
         function saveFiles() {
-            try {
-                localStorage.setItem('htmlos-files', JSON.stringify(Array.from(OS.files.entries())));
-            } catch (e) {
-                console.error("Error saving files to localStorage:", e);
-                // showAlert('Save Error', 'Could not save file data. Your browser might be blocking local storage access (e.g., in "file://" context).');
-            }
+            localStorage.setItem('htmlos-files', JSON.stringify(Array.from(OS.files.entries())));
         }
 
         function loadFiles() {
             const saved = localStorage.getItem('htmlos-files');
             if (saved) {
-                try {
-                    const files = JSON.parse(saved);
-                    OS.files = new Map(files);
-                    // Ensure files have 'type' property and normalize paths on load
-                    const normalizedFiles = new Map();
-                    OS.files.forEach((file, path) => {
-                        const normalizedPath = normalizePath(path);
-                        // Default to 'file' if type is not specified.
-                        // If a path exists but has no content or explicit type, and other files exist under it, it's treated as a folder.
-                        // For existing entries without a type, assume it's a file for now.
-                        if (!file.type) {
-                            // Check if this path is a prefix for any other file paths, implying it's a directory
-                            let isImplicitFolder = false;
-                            OS.files.forEach((otherFile, otherPath) => {
-                                if (otherPath.startsWith(normalizedPath + '/') && otherPath !== normalizedPath) {
-                                    isImplicitFolder = true;
-                                }
-                            });
-                            file.type = isImplicitFolder ? 'folder' : 'file'; 
+                const files = JSON.parse(saved);
+                OS.files = new Map(files);
+                // Ensure files have 'type' property and normalize paths on load
+                const normalizedFiles = new Map();
+                OS.files.forEach((file, path) => {
+                    const normalizedPath = normalizePath(path);
+                    let isImplicitFolder = false;
+                    OS.files.forEach((otherFile, otherPath) => {
+                        if (otherPath.startsWith(normalizedPath + '/') && otherPath !== normalizedPath) {
+                            isImplicitFolder = true;
                         }
-                        normalizedFiles.set(normalizedPath, file);
                     });
-                    OS.files = normalizedFiles;
-                } catch (e) {
-                    console.error("Error parsing files from localStorage:", e);
-                    localStorage.removeItem('htmlos-files'); // Clear corrupted data
-                    // showAlert('Load Error', 'Corrupted file data found. Clearing saved files.');
-                }
+                    file.type = file.type || (isImplicitFolder ? 'folder' : 'file'); 
+                    normalizedFiles.set(normalizedPath, file);
+                });
+                OS.files = normalizedFiles;
             }
         }
         
         function saveSettings() {
-            try {
-                localStorage.setItem('htmlos-settings', JSON.stringify(OS.settings));
-            } catch (e) {
-                console.error("Error saving settings to localStorage:", e);
-                // showAlert('Save Error', 'Could not save settings. Your browser might be blocking local storage access.');
-            }
+            localStorage.setItem('htmlos-settings', JSON.stringify(OS.settings));
         }
 
         function loadSettings() {
             const saved = localStorage.getItem('htmlos-settings');
             if (saved) {
-                try {
-                    const loadedSettings = JSON.parse(saved);
-                    // Deep merge for nested objects like developerMode
-                    OS.settings = { 
-                        ...OS.settings, 
-                        ...loadedSettings,
-                        developerMode: { ...OS.settings.developerMode, ...loadedSettings.developerMode }
-                    };
-                } catch (e) {
-                    console.error("Error parsing settings from localStorage:", e);
-                    localStorage.removeItem('htmlos-settings'); // Clear corrupted data
-                    // showAlert('Load Error', 'Corrupted settings found. Resetting to defaults.');
-                }
+                const loadedSettings = JSON.parse(saved);
+                // Deep merge for nested objects like developerMode
+                OS.settings = { 
+                    ...OS.settings, 
+                    ...loadedSettings,
+                    developerMode: { ...OS.settings.developerMode, ...loadedSettings.developerMode }
+                };
             }
         }
 
@@ -1303,8 +1188,10 @@ function editFileCmd(filePath) {
             let maxY = window.innerHeight - iconHeight - 50 - insets.bottom; // Default bottom taskbar
             const taskbarHeightVal = parseFloat(OS.settings.taskbarHeight);
 
-            if (OS.settings.taskbarPosition === 'top') {
-                maxY = window.innerHeight - iconHeight - taskbarHeightVal - insets.bottom;
+            if (OS.settings.taskbarPosition === 'bottom') {
+                maxY -= taskbarHeightVal;
+            } else if (OS.settings.taskbarPosition === 'top') {
+                minY += taskbarHeightVal;
             } else if (OS.settings.taskbarPosition === 'left' || OS.settings.taskbarPosition === 'right') {
                 maxX = window.innerWidth - iconWidth - taskbarHeightVal - insets.right;
                 if (OS.settings.taskbarPosition === 'left') {
@@ -1349,7 +1236,7 @@ function editFileCmd(filePath) {
             let app = OS.installedApps.get(appId);
             if (!app) return;
 
-            // FIX: Only redirect for Python IDE app, not for Notepad itself if it contains 'Python' in description
+            // Handle Python IDE launch by redirecting to Notepad in Python mode
             if (appId === 'python-ide') {
                 console.log(`Launching Python IDE. Opening in Notepad Python mode.`);
                 
@@ -1404,7 +1291,7 @@ function editFileCmd(filePath) {
                 content = createTaskManagerContent();
                 windowContentDiv.innerHTML = content;
                 updateTaskManagerList();
-            } else if (app.id === 'command-prompt') { // FIX: Changed from 'cmd' to 'command-prompt'
+            } else if (app.id === 'command-prompt') { 
                 content = createCmdContent();
                 windowContentDiv.innerHTML = content;
                 // Increased timeout slightly for better DOM readiness
@@ -1442,6 +1329,7 @@ function editFileCmd(filePath) {
                     const editorContainer = document.getElementById('notepad-editor-main-container');
                     if (editorContainer) {
                         console.log("Notepad: editorContainer found. Initializing editor.");
+                        // Pass options.startInPythonMode directly to initializeNotepadEditor
                         initializeNotepadEditor(initialContent, mode, options.startInPythonMode);
                         // Adjust window title for Python app redirection
                         if (options.startInPythonMode) {
@@ -1505,32 +1393,49 @@ function editFileCmd(filePath) {
 
         // Window management
         function createWindow(id, title, emoji) {
-            const window = document.createElement('div');
-            window.className = 'window';
-            window.id = id;
+            const windowElement = document.createElement('div'); // Renamed `window` to `windowElement` to avoid conflict with global `window` object
+            windowElement.className = 'window';
+            windowElement.id = id;
             
-            const insets = getSafeAreaInsets();
-            
-            // Position new windows dynamically to avoid overlap
-            let newX = (0 - insets.left + (OS.nextWindowId * 10) % 100);
-            let newY = (0 + insets.top + (OS.nextWindowId * 10) % 100);
+            // Set initial size to ensure min-width/height is met, and for calculation purposes later if needed
+            // These must be set *before* appending to body so offsetWidth/offsetHeight are accurate.
+            windowElement.style.width = '400px'; 
+            windowElement.style.height = '300px';
 
-            // Adjust for taskbar position if it's top or left
-            const taskbarHeightVal = parseFloat(OS.settings.taskbarHeight);
-            if (OS.settings.taskbarPosition === 'top') {
-                newY = Math.max(newY, insets.top + taskbarHeightVal + 10);
-            } else if (OS.settings.taskbarPosition === 'left') {
-                newX = Math.max(newX, insets.left + taskbarHeightVal + 10);
-            }
-            
-            window.style.left = newX + 'px';
-            window.style.top = newY + 'px';
-            
-            window.style.width = '300px';
-            window.style.height = '220px';
-            window.style.zIndex = ++OS.nextZIndex;
+            document.body.appendChild(windowElement); // Append to get accurate offsetWidth/Height
 
-            window.innerHTML = `
+            const desktop = document.getElementById('desktop');
+            const desktopRect = desktop.getBoundingClientRect();
+
+            // Calculate a cascading offset based on currently open windows
+            const cascadeStep = 20; // Pixels to offset each new window
+            const numOpenWindows = OS.windows.size; // Number of currently open windows
+            
+            // Ensure cascade range is positive, relative to desktop dimensions
+            const cascadeRangeX = Math.max(1, desktopRect.width - windowElement.offsetWidth - 20); // 20px buffer from edge
+            const cascadeRangeY = Math.max(1, desktopRect.height - windowElement.offsetHeight - 20); // 20px buffer from edge
+
+            const cascadeOffsetX = (numOpenWindows * cascadeStep) % cascadeRangeX;
+            const cascadeOffsetY = (numOpenWindows * cascadeStep) % cascadeRangeY;
+
+            // Initial position relative to the desktop's top-left corner
+            let initialX = desktopRect.left + 10 + cascadeOffsetX; // 10px padding from desktop edge + cascade
+            let initialY = desktopRect.top + 10 + cascadeOffsetY; // 10px padding from desktop edge + cascade
+
+            // Clamp positions to ensure window remains within desktop bounds
+            initialX = Math.min(initialX, desktopRect.right - windowElement.offsetWidth - 10); // Ensure window doesn't go off right edge
+            initialY = Math.min(initialY, desktopRect.bottom - windowElement.offsetHeight - 10); // Ensure window doesn't go off bottom edge
+
+            // Ensure we don't go below desktop.left/top (should already be covered by desktopRect.left/top + padding, but good for robustness)
+            initialX = Math.max(initialX, desktopRect.left + 10);
+            initialY = Math.max(initialY, desktopRect.top + 10);
+            
+            windowElement.style.left = initialX + 'px';
+            windowElement.style.top = initialY + 'px';
+            
+            windowElement.style.zIndex = ++OS.nextZIndex;
+
+            windowElement.innerHTML = `
                 <div class="window-titlebar" onmousedown="startDrag(event, '${id}')" ontouchstart="startDrag(event, '${id}')">
                     <div class="window-title">
                         <span>${emoji}</span>
@@ -1551,9 +1456,9 @@ function editFileCmd(filePath) {
                 <div class="window-content"></div>
             `;
 
-            document.body.appendChild(window);
-            OS.windows.set(id, window);
-            return window;
+            // It's already appended to body. Now we can add it to our OS.windows map.
+            OS.windows.set(id, windowElement);
+            return windowElement;
         }
 
         function closeWindow(windowId) {
@@ -1850,7 +1755,6 @@ function editFileCmd(filePath) {
                 return;
             }
 
-            // Removed try...catch here for silent failure in file:// contexts
             const app = {
                 id: appId,
                 name: name,
@@ -1863,7 +1767,7 @@ function editFileCmd(filePath) {
 
 
             OS.installedApps.set(appId, app);
-            saveInstalledApps(); // This will now fail silently
+            saveInstalledApps(); 
             updateDesktopIcons();
             
             if (document.getElementById('app-store-content')) {
@@ -2143,7 +2047,7 @@ function editFileCmd(filePath) {
                 let meta = '';
 
                 if (itemInfo.type === 'folder') {
-                    icon = '�';
+                    icon = '📁';
                     meta = 'Folder';
                     itemDiv.onclick = () => openFileOrFolder(itemInfo.path, 'folder');
                 } else { // type === 'file'
@@ -2179,7 +2083,7 @@ function editFileCmd(filePath) {
                 case 'css': return '🎨';
                 case 'json': return '💾';
                 case 'md': return '🗒️';
-                case 'py': return '🐍';
+                case 'py': return '�';
                 default: return '❓';
             }
         }
@@ -2196,9 +2100,12 @@ function editFileCmd(filePath) {
                     // Decide whether to open in Notepad or HTML editor based on type/extension
                     if (file.type === 'text/html' || file.name.endsWith('.html') || file.name.endsWith('.htm')) {
                         launchApp('notepad', { filePath: normalizedPath, newWindow: true }); // Open in new window
-                    } else if (file.type.startsWith('text/') || file.type === 'application/json' || file.name.endsWith('.js') || file.name.endsWith('.css') || file.name.endsWith('.py') || file.name.endsWith('.md')) {
+                    } else if (file.type.startsWith('text/') || file.type === 'application/json' || file.name.endsWith('.js') || file.name.endsWith('.css') || file.name.endsWith('.md')) {
                         launchApp('notepad', { filePath: normalizedPath, newWindow: true }); // Open in new window
-                    } else {
+                    } else if (file.name.endsWith('.py')) { // Explicitly handle Python files
+                        launchApp('notepad', { filePath: normalizedPath, newWindow: true, startInPythonMode: true }); // Open in new window with Python mode
+                    }
+                    else {
                         showAlert(`No default app to open files of type: ${file.type}`);
                     }
                 } else {
@@ -2439,7 +2346,7 @@ function editFileCmd(filePath) {
 
         function updateSetting(key, value) {
             OS.settings[key] = value;
-            saveSettings(); // This will now fail silently
+            saveSettings(); 
             applySettings(); // Re-apply all settings
             // Update range value displays
             if (key === 'taskbarHeight') document.getElementById('taskbarHeightValue').textContent = value;
@@ -2454,7 +2361,7 @@ function editFileCmd(filePath) {
 
         function updateDeveloperSetting(key, value) {
             OS.settings.developerMode[key] = value;
-            saveSettings(); // This will now fail silently
+            saveSettings(); 
             applySettings(); // Re-apply all settings (important for logging)
             if (key === 'showHiddenFiles') {
                 updateFileList(); // Refresh file explorer if open
@@ -2509,7 +2416,7 @@ function editFileCmd(filePath) {
                         notepadSexyUI: false,
                         osVersion: "4.0" // Keep the version fixed
                     };
-                    saveSettings(); // This will now fail silently
+                    saveSettings(); 
                     applySettings();
                     loadSettingsForm(); // Update the form inputs
                     showAlert('Settings Reset', 'Settings reset to defaults!');
@@ -2540,7 +2447,7 @@ function editFileCmd(filePath) {
                     }
                 });
                 OS.settings.startupApps = selectedApps;
-                saveSettings(); // This will now fail silently
+                saveSettings(); 
                 loadSettingsForm(); // Refresh the settings form display
                 showAlert('Startup Apps Updated', 'Startup apps updated!');
             }, true, false); // Explicitly state no text confirmation needed for this prompt
@@ -2645,8 +2552,8 @@ function editFileCmd(filePath) {
                 }
             }
             // If CMD is open and active (e.g., for 'pip install')
-            const cmdApp = document.querySelector('.cmd-app');
-            if (cmdApp && !cmdApp.closest('.window').classList.contains('minimized')) { // Check if CMD window is active
+            const cmdApp = activeWindow.querySelector('.cmd-app'); // Only check if cmdApp is in the active window
+            if (cmdApp) { 
                 return 'cmd-output';
             }
             // Fallback: If no specific context is found, it shouldn't happen, but here for robustness.
