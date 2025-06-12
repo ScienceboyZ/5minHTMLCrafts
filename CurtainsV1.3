@@ -1349,21 +1349,16 @@ function editFileCmd(filePath) {
             let app = OS.installedApps.get(appId);
             if (!app) return;
 
-            // NEW LOGIC: Check if description contains "py" for Python execution override
-            // Or if the app being launched is explicitly the 'python-ide' (which will now open Notepad)
-            if (app.description && app.description.toLowerCase().includes('py') || appId === 'python-ide') {
-                console.log(`Detected "py" in description for app "${app.name}" or launching Python IDE. Opening in Notepad Python mode.`);
+            // FIX: Only redirect for Python IDE app, not for Notepad itself if it contains 'Python' in description
+            if (appId === 'python-ide') {
+                console.log(`Launching Python IDE. Opening in Notepad Python mode.`);
                 
-                const initialPythonCode = app.htmlContent || 'print("Hello from Python!")\n# Use pip install <package_name> in CMD to install packages.';
+                const initialPythonCode = app.htmlContent || 'print("Hello, Python!")\n# Write your Python code here.\n# Use pip install <package_name> in CMD to install packages.';
 
-                // Force Notepad to open in Python mode with the specific content
-                // Ensure a new window is always opened for clarity if it's an 'app' launching Python.
-                // If it's a file opened via File Explorer, existing window reuse is fine.
                 const launchOptions = {
                     filePath: options.filePath, // Pass filePath if available
                     newWindow: options.newWindow !== undefined ? options.newWindow : true, // Default to new window if not explicitly false
                     startInPythonMode: true,
-                    initialPythonCode: initialPythonCode,
                     originalAppName: app.name,
                     originalAppEmoji: app.emoji
                 };
@@ -1409,7 +1404,7 @@ function editFileCmd(filePath) {
                 content = createTaskManagerContent();
                 windowContentDiv.innerHTML = content;
                 updateTaskManagerList();
-            } else if (app.id === 'cmd') {
+            } else if (app.id === 'command-prompt') { // FIX: Changed from 'cmd' to 'command-prompt'
                 content = createCmdContent();
                 windowContentDiv.innerHTML = content;
                 // Increased timeout slightly for better DOM readiness
@@ -1437,6 +1432,7 @@ function editFileCmd(filePath) {
                 const filePath = options.filePath || null;
                 currentNotepadFileName = filePath;
                 
+                // Pass startInPythonMode from options for correct Notepad initialization
                 const initialContent = options.initialPythonCode || (filePath ? OS.files.get(filePath).content : '');
                 const mode = options.startInPythonMode ? 'python' : (filePath ? getCodeMirrorModeForFile(filePath.split('/').pop()) : OS.settings.notepadMode);
                 
@@ -2147,7 +2143,7 @@ function editFileCmd(filePath) {
                 let meta = '';
 
                 if (itemInfo.type === 'folder') {
-                    icon = '📁';
+                    icon = '�';
                     meta = 'Folder';
                     itemDiv.onclick = () => openFileOrFolder(itemInfo.path, 'folder');
                 } else { // type === 'file'
@@ -2176,7 +2172,7 @@ function editFileCmd(filePath) {
             const parts = fileName.split('.');
             const extension = parts.length > 1 ? parts.pop().toLowerCase() : '';
             switch (extension) {
-                case 'txt': return '�';
+                case 'txt': return '📄';
                 case 'html':
                 case 'htm': return '🌐';
                 case 'js': return '📜';
