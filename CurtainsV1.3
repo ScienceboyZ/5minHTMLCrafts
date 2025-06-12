@@ -2453,7 +2453,7 @@ function editFileCmd(filePath) {
                 const args = parts.slice(1);
 
                 try {
-                    switch (cmd) {
+                 switch (cmd) {
                         case 'echo':
                             updateCmdOutput(args.join(' '));
                             break;
@@ -2464,9 +2464,26 @@ function editFileCmd(filePath) {
                                 updateCmdOutput('Usage: cd &lt;directory&gt;', true);
                             }
                             break;
+
+case 'edit':
+    if (args.length === 0) {
+        updateCmdOutput('Usage: edit <file_name>', true);
+    } else {
+        const filePath = normalizePath(OS.currentDirectory + '/' + args[0]);
+        if (!OS.files.has(filePath)) {
+            updateCmdOutput(`edit: No such file exists: ${args[0]}`, true);
+        } else {
+            editFileCmd(filePath);
+        }
+    }
+    break;
+
                         case 'ls':
                         case 'dir':
                             listDirectoryContents(args[0]);
+                            break;
+                        case 'cat':
+                            viewFileContent(args[0]);
                             break;
                         case 'cat':
                             viewFileContent(args[0]);
