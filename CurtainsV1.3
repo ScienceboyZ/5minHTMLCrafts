@@ -1264,14 +1264,34 @@ function editFileCmd(filePath) {
 
         // App launching
         function launchApp(appId, options = {}) {
-            const app = OS.installedApps.get(appId);
+            let app = OS.installedApps.get(appId);
             if (!app) return;
+
+            let initialPythonCode = null; // Variable to hold Python code if detected
+
+            // NEW LOGIC: Check if description contains "py" for Python execution override
+            if (app.description && app.description.toLowerCase().includes('py') && app.id !== 'python-ide') {
+                console.log(`Detected "py" in description for app "${app.name}". Preparing to launch as Python app.`);
+                initialPythonCode = app.htmlContent || 'print("No Python code provided in this app.")';
+                
+                // For the purpose of launching, create a temporary app object
+                const tempApp = { ...app }; // Create a copy to avoid modifying the original
+                tempApp.id = 'python-ide'; // Force the ID to match the Python IDE
+                tempApp.name = `🐍 ${app.name}`; // Prepend Python emoji for clear indication
+                tempApp.emoji = '🐍';
+                tempApp.description = `Running ${app.name} as Python`;
+                app = tempApp; // Use this modified tempApp for the rest of the launch flow
+                
+                // Crucially, ensure options.newWindow is true if we're forcing a Python launch,
+                // so it doesn't try to reuse a non-Python instance of the original app.
+                options.newWindow = true; 
+            }
 
             // If not creating a new window, try to find an existing instance and focus it
             if (!options.newWindow) {
                 let existingWindowId = null;
                 for (const [winId, appData] of OS.runningApps.entries()) {
-                    if (appData.appId === appId) {
+                    if (appData.appId === app.id) { // Use the (potentially modified) app.id here for matching
                         existingWindowId = winId;
                         break;
                     }
@@ -1283,7 +1303,7 @@ function editFileCmd(filePath) {
             }
 
             const windowId = 'window-' + OS.nextWindowId++;
-            const window = createWindow(windowId, app.name, app.emoji);
+            const window = createWindow(windowId, app.name, app.emoji); // Use the (potentially modified) app.name/emoji
 
             const windowContentDiv = window.querySelector('.window-content');
             windowContentDiv.innerHTML = '<div class="loading">Loading app...</div>';
@@ -1298,10 +1318,10 @@ function editFileCmd(filePath) {
                 content = createFileExplorerContent();
                 windowContentDiv.innerHTML = content;
                 updateFileList();
-            } else if (app.id === 'settings') { // New settings app
+            } else if (app.id === 'settings') { 
                 content = createSettingsContent();
                 windowContentDiv.innerHTML = content;
-                loadSettingsForm(); // Populate form with current settings
+                loadSettingsForm();
             } else if (app.id === 'task-manager') {
                 content = createTaskManagerContent();
                 windowContentDiv.innerHTML = content;
@@ -1309,13 +1329,11 @@ function editFileCmd(filePath) {
             } else if (app.id === 'cmd') {
                 content = createCmdContent();
                 windowContentDiv.innerHTML = content;
-                // Defer focus to ensure input element is rendered
                 setTimeout(() => {
                     const cmdInput = document.getElementById('cmd-input');
                     if (cmdInput) {
                         cmdInput.focus(); 
-                        // Add event listener here if not already added
-                        if (!cmdInput.dataset.listenerAdded) { // Use a dataset flag
+                        if (!cmdInput.dataset.listenerAdded) {
                             cmdInput.addEventListener('keydown', handleCmdInput);
                             cmdInput.dataset.listenerAdded = 'true';
                         }
@@ -1324,41 +1342,36 @@ function editFileCmd(filePath) {
             } else if (app.id === 'calculator') {
                 content = createCalculatorContent();
                 windowContentDiv.innerHTML = content;
-            } else if (app.id === 'notepad') { // Notepad app - separate from HTML editor for general text
-                content = createNotepadContent(); // Reuse notepad content structure
+            } else if (app.id === 'notepad') { 
+                content = createNotepadContent();
                 windowContentDiv.innerHTML = content;
-                const filePath = options.filePath || null; // Get file path from options
-                currentNotepadFileName = filePath; // Set current file being edited
-
-                // Initialize CodeMirror after the DOM is updated
+                const filePath = options.filePath || null;
+                currentNotepadFileName = filePath;
                 setTimeout(() => {
                     const fileData = filePath ? OS.files.get(filePath) : null;
                     const initialContent = fileData ? fileData.content : '';
                     const mode = filePath ? getCodeMirrorModeForFile(filePath.split('/').pop()) : OS.settings.notepadMode;
                     initializeNotepadEditor(initialContent, mode);
-
-                    // Update window title for Notepad/HTML Editor
                     if (filePath) {
                         const titleSpan = window.querySelector('.window-title span:last-child');
                         if (titleSpan) titleSpan.textContent = `${app.emoji} ${filePath.split('/').pop()}`;
                     } else {
-                        // For a new, unsaved Notepad document
                         const titleSpan = window.querySelector('.window-title span:last-child');
                         if (titleSpan) titleSpan.textContent = `${app.emoji} Untitled`;
                     }
                 }, 0); 
             }
-            else if (app.id === 'python-ide') {
+            else if (app.id === 'python-ide') { // This block now handles both explicit and inferred Python apps
                 content = createPythonAppContent();
                 windowContentDiv.innerHTML = content;
-                setTimeout(initializePythonEditor, 0); // Initialize Python editor
+                // Pass the detected Python code or default if none
+                setTimeout(() => initializePythonEditor(initialPythonCode), 0); 
             }
-            else if (app.htmlUrl) { // Handle external URLs
+            else if (app.htmlUrl) {
                 const iframeId = `frame-${windowId}`;
                 content = `<iframe id="${iframeId}" style="width:100%;height:100%;border:none;"></iframe>`;
-                windowContentDiv.innerHTML = content; // Set iframe HTML immediately
+                windowContentDiv.innerHTML = content;
                 
-                // Fetch and set srcdoc without try/catch or Blob URLs, mirroring older version
                 setTimeout(() => {
                     fetch(app.htmlUrl)
                         .then(res => res.text())
@@ -1368,17 +1381,16 @@ function editFileCmd(filePath) {
                                 iframe.srcdoc = html;
                             }
                         })
-                        .catch(error => { // Only this fetch-specific catch remains for content loading errors
+                        .catch(error => {
                             console.error(`Failed to load app from ${app.htmlUrl}:`, error);
                             const iframe = document.getElementById(iframeId);
                             if (iframe) {
                                 iframe.srcdoc = "<p style='padding:20px;color:red;'>Failed to fetch or render HTML content.</p>";
                             }
                         });
-                }, 100); // Small delay to ensure iframe is in DOM
-            } else if (app.htmlContent) { // Handle internal HTML content
+                }, 100);
+            } else if (app.htmlContent) {
                 const iframeId = `frame-${windowId}`;
-                // Direct srcdoc for internal HTML, no sandbox here to match older version's general iframe behavior
                 content = `<iframe id="${iframeId}" srcdoc="${app.htmlContent.replace(/"/g, '&quot;')}" style="width:100%;height:100%;border:none;"></iframe>`;
                 windowContentDiv.innerHTML = content;
             } else {
@@ -1387,10 +1399,10 @@ function editFileCmd(filePath) {
                 return;
             }
 
-            // Register running app with windowId as key
+            // Register running app with windowId as key (use the potentially modified app object for runningApps)
             OS.runningApps.set(windowId, {
                 windowId: windowId,
-                appId: app.id, // Store appId for easy lookup in Task Manager
+                appId: app.id,
                 app: app,
                 blobUrl: null 
             });
@@ -2068,11 +2080,11 @@ function editFileCmd(filePath) {
                 case 'txt': return '📄';
                 case 'html':
                 case 'htm': return '🌐';
-                case 'js': return ' ';
+                case 'js': return '📜';
                 case 'css': return '🎨';
                 case 'json': return '💾';
                 case 'md': return '🗒️';
-                case 'py': return '🐍';
+                case 'py': return '�';
                 default: return '❓';
             }
         }
@@ -3433,12 +3445,12 @@ case 'edit':
             `;
         }
 
-        async function initializePythonEditor() {
+        async function initializePythonEditor(initialCode = 'print("Hello from Python!")\n# You can install packages like: micropip.install("numpy")') {
             const editorContainer = document.getElementById('python-editor-main-container');
             if (editorContainer) {
                 editorContainer.innerHTML = ''; // Clear previous editor instance
                 pythonCodeMirrorEditor = CodeMirror(editorContainer, {
-                    value: 'print("Hello from Python!")\n# You can install packages like: micropip.install("numpy")',
+                    value: initialCode, // Use initialCode here
                     mode: 'python',
                     theme: 'dracula', // Can be made configurable via settings later
                     lineNumbers: true,
@@ -3551,4 +3563,3 @@ case 'edit':
     </script>
 </body>
 </html>
- 
