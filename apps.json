@@ -67,8 +67,14 @@
   },
   {
     "name": "Tower Defence",
-    "emoji": "✈🗼🗼",
+    "emoji": "🗼",
     "description": "A tower defense game",
     "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/HTMLTD.html"
+  },
+  {
+    "name": "Shooter Game",
+    "emoji": "🔫",
+    "description": "A simple shooter game made by kauan.",
+    "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/Shooter.html"
   }
 ]
