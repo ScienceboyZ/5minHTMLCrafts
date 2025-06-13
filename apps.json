@@ -76,11 +76,5 @@
     "emoji": "🔫",
     "description": "A simple shooter game made by kauan.",
     "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/Shooter.html"
-  },
-  {
-    "name": "Flappy Bird",
-    "emoji": "🐦‍⬛",
-    "description": "Flappy bird written in py",
-    "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/flappyBird.py"
   }
 ]
