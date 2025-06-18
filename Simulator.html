@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Interactive Photon & Phase Simulator</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      align-items: center;
+      justify-content: center;
+    }
+    .simulator {
+      position: relative;
+      width: 600px;
+      height: 400px;
+      border: 4px solid #333;
+      background: #fff;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .dot {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #222;
+      border-radius: 50%;
+      transform: translate(-50%,-50%);
+    }
+    .arrow {
+      position: absolute;
+      width: 160px;
+      height: 4px;
+      background: crimson;
+      transform-origin: 0% 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-0%, -50%) rotate(0deg);
+    }
+    .controls {
+      width: 600px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .control {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      font-size: 14px;
+    }
+    .control label {
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+    .control input {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="simulator" id="box">
+    <div class="dot" id="photon"></div>
+    <div class="arrow" id="phaseArrow"></div>
+  </div>
+
+  <div class="controls">
+    <div class="control">
+      <label for="freq">Frequency (Hz): <span id="freqVal">1.0</span></label>
+      <input type="range" id="freq" min="0.1" max="5" step="0.1" value="1.0" />
+    </div>
+    <div class="control">
+      <label for="amp">Amplitude (px): <span id="ampVal">50</span></label>
+      <input type="range" id="amp" min="0" max="150" step="1" value="50" />
+    </div>
+  </div>
+
+  <script>
+    // DOM elements
+    const box       = document.getElementById('box');
+    const dot       = document.getElementById('photon');
+    const arrow     = document.getElementById('phaseArrow');
+    const freqInput = document.getElementById('freq');
+    const ampInput  = document.getElementById('amp');
+    const freqVal   = document.getElementById('freqVal');
+    const ampVal    = document.getElementById('ampVal');
+
+    // Dimensions
+    const W = box.clientWidth;
+    const H = box.clientHeight;
+    const centerY = H/2;
+
+    // Wave parameters (defaults)
+    let frequency = parseFloat(freqInput.value);  // Hz
+    let amplitude = parseFloat(ampInput.value);   // px
+
+    // Derived
+    let wavelength = 200;                         // px per cycle
+    let speed = frequency * wavelength;           // px/s → v = λ·f
+
+    // Phase & position trackers
+    let phase = 0;      // radians
+    let xPos = 0;       // px
+    let lastTime = null;
+
+    // Update labels
+    function updateLabels() {
+      freqVal.textContent = frequency.toFixed(1);
+      ampVal.textContent  = amplitude.toFixed(0);
+    }
+
+    // Handle control changes
+    freqInput.addEventListener('input', e => {
+      frequency = parseFloat(e.target.value);
+      speed     = frequency * wavelength;
+      updateLabels();
+    });
+    ampInput.addEventListener('input', e => {
+      amplitude = parseFloat(e.target.value);
+      updateLabels();
+    });
+
+    // Animation loop
+    function animate(ts) {
+      if (!lastTime) { lastTime = ts; requestAnimationFrame(animate); return; }
+      const dt = (ts - lastTime) / 1000; // seconds elapsed
+      lastTime = ts;
+
+      // advance phase
+      const omega = 2 * Math.PI * frequency;
+      phase += omega * dt;
+
+      // move horizontally
+      xPos += speed * dt;
+
+      // compute vertical oscillation
+      const yPos = centerY + amplitude * Math.sin(phase);
+
+      // update photon
+      dot.style.left = `${xPos}px`;
+      dot.style.top  = `${yPos}px`;
+
+      // update arrow rotation (convert rad → deg)
+      arrow.style.transform =
+        `translate(-0%, -50%) rotate(${phase * 180/Math.PI}deg)`;
+
+      // loop or reset
+      if (xPos < W + 20) {
+        requestAnimationFrame(animate);
+      } else {
+        // reset when out of view
+        xPos = -20;
+        lastTime = null;
+        requestAnimationFrame(animate);
+      }
+    }
+
+    // kick off
+    updateLabels();
+    requestAnimationFrame(animate);
+
+  </script>
+</body>
+</html>
