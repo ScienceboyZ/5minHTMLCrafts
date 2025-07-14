@@ -1,10 +1,10 @@
 {
-  "name": "My App Name",
-  "short_name": "App",
+  "name": "CurtainsV1.4.1",
+  "short_name": "Curtains",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#7157b4",
+  "theme_color": "#677be5",
   "icons": [
     {
       "src": "icon-192.png",
