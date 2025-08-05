@@ -82,5 +82,12 @@
     "emoji": "💡",
     "description": "A photon simulator for nerds.",
     "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/Simulator.html"
+  },
+  {
+    "name": "Creator",
+    "emoji": "📜",
+    "description": "Become a creator!",
+    "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/Curtator.html"
   }
 ]
+
