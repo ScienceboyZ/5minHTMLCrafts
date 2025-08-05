@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator App</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        /* Hide sidebar by default on mobile, show on larger screens */
+        #file-explorer {
+            display: none;
+        }
+        @media (min-width: 640px) {
+            #file-explorer {
+                display: flex;
+            }
+        }
+        /* Transition for sidebar toggle */
+        .sidebar-visible {
+            display: flex !important;
+            animation: slideInLeft 0.3s ease-out;
+        }
+        @keyframes slideInLeft {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 antialiased h-screen flex flex-col overflow-hidden">
+
+    <!-- Top Toolbar for Mobile -->
+    <div class="bg-gray-800 p-3 flex items-center justify-between border-b border-gray-700 sm:hidden">
+        <button id="toggle-sidebar-btn" class="text-gray-400 hover:text-white p-2 rounded-lg hover:bg-gray-700 transition-colors duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </button>
+        <span id="current-file-label-mobile" class="text-sm text-gray-400 font-mono flex-1 text-center truncate px-2">No file selected</span>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- File Explorer Sidebar -->
+        <div id="file-explorer" class="fixed inset-y-0 left-0 w-3/4 max-w-xs bg-gray-800 p-4 border-r border-gray-700 flex-col overflow-y-auto z-50 sm:static sm:w-1/4 sm:max-w-xs sm:flex">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                    Files
+                </h2>
+                <button id="close-sidebar-btn" class="text-gray-400 hover:text-white p-1 sm:hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="file-list" class="flex-1 overflow-y-auto">
+                <!-- File items will be injected here by JavaScript -->
+            </div>
+            <div class="mt-4 border-t border-gray-700 pt-4 flex flex-col gap-2">
+                <!-- Hidden file input for uploads, now with webkitdirectory -->
+                <input type="file" id="file-upload-input" class="hidden" multiple webkitdirectory />
+                
+                <button id="add-file-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 5v14M5 12h14"></path>
+                    </svg>
+                    Add New File
+                </button>
+                <button id="add-folder-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    Add New Folder
+                </button>
+                <button id="upload-file-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition-colors duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Upload Files
+                </button>
+            </div>
+        </div>
+
+        <!-- Editor and Preview Pane -->
+        <div class="flex-1 flex flex-col bg-gray-900 overflow-hidden sm:ml-auto">
+
+            <!-- Toolbar (Desktop Only) -->
+            <div class="bg-gray-800 p-3 flex items-center justify-between border-b border-gray-700 hidden sm:flex">
+                <span id="current-file-label" class="text-sm text-gray-400 font-mono">No file selected</span>
+                <div class="flex gap-2">
+                    <button id="run-btn" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-1.5 px-4 rounded-lg shadow-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Run
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editor and Preview Tabs -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <!-- Tabs for Editor and Preview -->
+                <div class="flex bg-gray-900 border-b border-gray-700">
+                    <button id="editor-tab" class="flex-1 px-6 py-3 text-sm font-medium transition-colors duration-200" data-tab="editor">Editor</button>
+                    <button id="preview-tab" class="flex-1 px-6 py-3 text-sm font-medium transition-colors duration-200" data-tab="preview">Preview</button>
+                </div>
+
+                <!-- Editor Pane -->
+                <div id="editor-pane" class="flex-1 p-4 overflow-hidden">
+                    <textarea id="code-editor" class="w-full h-full bg-gray-800 text-gray-200 p-4 rounded-lg border border-gray-700 focus:outline-none focus:border-blue-500 text-sm font-mono leading-relaxed resize-none"></textarea>
+                </div>
+
+                <!-- Preview Pane (hidden by default) -->
+                <div id="preview-pane" class="flex-1 p-4 hidden">
+                    <iframe id="preview-frame" class="w-full h-full bg-white rounded-lg border-2 border-gray-700"></iframe>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal for new file creation -->
+    <div id="new-file-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-gray-800 p-6 rounded-lg shadow-xl w-96">
+            <h3 class="text-lg font-bold mb-4">Create New File</h3>
+            <input type="text" id="new-file-name-input" placeholder="file-name.html" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white mb-4 focus:outline-none focus:border-blue-500" />
+            <div class="flex justify-end gap-2">
+                <button id="cancel-new-file-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg">Cancel</button>
+                <button id="create-file-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">Create</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for new folder creation -->
+    <div id="new-folder-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
+        <div class="bg-gray-800 p-6 rounded-lg shadow-xl w-96">
+            <h3 class="text-lg font-bold mb-4">Create New Folder</h3>
+            <input type="text" id="new-folder-name-input" placeholder="folder-name" class="w-full p-2 bg-gray-700 border border-gray-600 rounded-lg text-white mb-4 focus:outline-none focus:border-blue-500" />
+            <div class="flex justify-end gap-2">
+                <button id="cancel-new-folder-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg">Cancel</button>
+                <button id="create-folder-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Message Modal -->
+    <div id="message-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bg-gray-800 p-6 rounded-lg shadow-xl w-80">
+            <h3 id="message-modal-title" class="text-lg font-bold mb-2 text-red-400">Error</h3>
+            <p id="message-modal-content" class="mb-4 text-gray-300">An error occurred.</p>
+            <div class="flex justify-end">
+                <button id="close-message-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state for our file system and active file
+        let fileSystem = [];
+        let activeFile = null;
+        let activeFolderId = null; 
+        let renamingFileId = null;
+
+        // DOM elements
+        const fileListContainer = document.getElementById('file-list');
+        const codeEditor = document.getElementById('code-editor');
+        const currentFileLabel = document.getElementById('current-file-label');
+        const currentFileLabelMobile = document.getElementById('current-file-label-mobile');
+        const runButton = document.getElementById('run-btn');
+        const previewFrame = document.getElementById('preview-frame');
+        const editorPane = document.getElementById('editor-pane');
+        const previewPane = document.getElementById('preview-pane');
+        const editorTab = document.getElementById('editor-tab');
+        const previewTab = document.getElementById('preview-tab');
+        const addFileBtn = document.getElementById('add-file-btn');
+        const addFolderBtn = document.getElementById('add-folder-btn');
+        const uploadFileBtn = document.getElementById('upload-file-btn');
+        const fileUploadInput = document.getElementById('file-upload-input');
+        const newFileModal = document.getElementById('new-file-modal');
+        const newFileNameInput = document.getElementById('new-file-name-input');
+        const createFileBtn = document.getElementById('create-file-btn');
+        const cancelNewFileBtn = document.getElementById('cancel-new-file-btn');
+        const newFolderModal = document.getElementById('new-folder-modal');
+        const newFolderNameInput = document.getElementById('new-folder-name-input');
+        const createFolderBtn = document.getElementById('create-folder-btn');
+        const cancelNewFolderBtn = document.getElementById('cancel-new-folder-btn');
+        const messageModal = document.getElementById('message-modal');
+        const messageModalTitle = document.getElementById('message-modal-title');
+        const messageModalContent = document.getElementById('message-modal-content');
+        const closeMessageBtn = document.getElementById('close-message-btn');
+        const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+        const closeSidebarBtn = document.getElementById('close-sidebar-btn');
+        const fileExplorer = document.getElementById('file-explorer');
+
+
+        // --- Local Storage Functions ---
+        const LOCAL_STORAGE_KEY = 'creator-app-file-system';
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(fileSystem));
+            } catch (error) {
+                console.error("Error saving to local storage:", error);
+                showModalMessage("Failed to save changes. Please check your browser settings.", "Storage Error");
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (storedData) {
+                    fileSystem = JSON.parse(storedData);
+                } else {
+                    // Initialize with a default file if local storage is empty
+                    fileSystem = [{
+                        id: crypto.randomUUID(),
+                        name: "welcome.txt",
+                        type: "text",
+                        content: "Hello! This is your starter file. You can create new files and folders, or upload your own project."
+                    }];
+                }
+            } catch (error) {
+                console.error("Error loading from local storage:", error);
+                showModalMessage("Failed to load your previous session. Starting with a new project.", "Storage Error");
+                // Reset to default on error
+                fileSystem = [{
+                    id: crypto.randomUUID(),
+                    name: "welcome.txt",
+                    type: "text",
+                    content: "Hello! This is your starter file. You can create new files and folders, or upload your own project."
+                }];
+            }
+        }
+
+        // --- Core Application Logic ---
+
+        // Helper to find an item (file or folder) by its ID recursively
+        function findItemById(items, id) {
+            for (const item of items) {
+                if (item.id === id) {
+                    return item;
+                }
+                if (item.type === 'folder' && item.children) {
+                    const found = findItemById(item.children, id);
+                    if (found) {
+                        return found;
+                    }
+                }
+            }
+            return null;
+        }
+
+        // Helper to find an item by its name in a specific list
+        function findItemByName(items, name) {
+            return items.find(item => item.name === name);
+        }
+
+        // Helper to find the parent of an item
+        function findParent(items, childId) {
+            for (const item of items) {
+                if (item.type === 'folder' && item.children) {
+                    if (item.children.some(child => child.id === childId)) {
+                        return item;
+                    }
+                    const found = findParent(item.children, childId);
+                    if (found) {
+                        return found;
+                    }
+                }
+            }
+            return null;
+        }
+        
+        // Helper function to get an icon based on item type
+        function getItemIcon(type, isOpen) {
+            if (type === 'folder') {
+                return isOpen ? '📂' : '📁';
+            }
+            switch (type) {
+                case 'html': return '📄';
+                case 'css': return '🎨';
+                case 'js': return '⚙️';
+                case 'image': return '📷';
+                default: return '📜'; // Default icon for text files
+            }
+        }
+
+        // Function to render the file list in the sidebar (recursive)
+        function renderFileList(items, parentElement, depth) {
+            parentElement.innerHTML = '';
+            items.forEach(item => {
+                const itemContainer = document.createElement('div');
+                itemContainer.style.paddingLeft = `${depth * 1}rem`;
+                
+                const itemElement = document.createElement('div');
+                itemElement.className = `file-item flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-gray-700 ${activeFile && activeFile.id === item.id ? 'bg-gray-700' : ''} ${activeFolderId === item.id ? 'bg-gray-600' : ''}`;
+                itemElement.dataset.itemId = item.id;
+                
+                const itemIcon = getItemIcon(item.type, item.isOpen);
+                
+                const itemDetails = document.createElement('div');
+                itemDetails.className = 'flex items-center flex-1';
+
+                const itemNameSpan = document.createElement('span');
+                itemNameSpan.className = 'text-sm font-medium flex-1 truncate';
+                itemNameSpan.textContent = item.name;
+
+                const itemNameInput = document.createElement('input');
+                itemNameInput.type = 'text';
+                itemNameInput.value = item.name;
+                itemNameInput.className = 'flex-1 bg-gray-700 text-white p-1 rounded-lg border border-gray-600 focus:outline-none focus:border-blue-500 text-sm font-mono leading-relaxed';
+                
+                // Show the input field if the item is being renamed
+                if (renamingFileId === item.id) {
+                    itemDetails.innerHTML = `<div class="mr-3 text-lg">${itemIcon}</div>`;
+                    itemDetails.appendChild(itemNameInput);
+                    setTimeout(() => {
+                        itemNameInput.focus();
+                        itemNameInput.select();
+                    }, 0);
+                    
+                    itemNameInput.addEventListener('blur', (e) => handleRename(e.target.value, item.id));
+                    itemNameInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleRename(e.target.value, item.id);
+                        }
+                    });
+                } else {
+                    itemDetails.innerHTML = `<div class="mr-3 text-lg">${itemIcon}</div>`;
+                    itemDetails.appendChild(itemNameSpan);
+
+                    // Rename icon button
+                    const renameButton = document.createElement('button');
+                    renameButton.className = 'text-gray-400 hover:text-white ml-2 p-1 rounded-lg hover:bg-gray-600';
+                    renameButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>`;
+                    renameButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        renamingFileId = item.id;
+                        renderFileList(fileSystem, fileListContainer, 0);
+                    });
+                    itemElement.appendChild(renameButton);
+                }
+
+                itemElement.appendChild(itemDetails);
+                itemContainer.appendChild(itemElement);
+
+                if (item.type === 'folder' && item.isOpen) {
+                    const childrenContainer = document.createElement('div');
+                    itemContainer.appendChild(childrenContainer);
+                    renderFileList(item.children, childrenContainer, depth + 1);
+                }
+
+                parentElement.appendChild(itemContainer);
+            });
+        }
+
+        // Function to select a file by its ID
+        function selectFile(fileId) {
+            activeFile = findItemById(fileSystem, fileId);
+            if (activeFile) {
+                if (activeFile.type !== 'folder') {
+                    codeEditor.value = activeFile.content;
+                    currentFileLabel.textContent = activeFile.name;
+                    currentFileLabelMobile.textContent = activeFile.name;
+                    activeFolderId = findParent(fileSystem, fileId)?.id || null;
+                    
+                    // Enable or disable the Run button based on file type
+                    const isRunnable = ['html', 'htm'].includes(activeFile.type);
+                    runButton.disabled = !isRunnable;
+                    runButton.title = isRunnable ? "Run the HTML project" : "Only HTML files can be run directly.";
+                    
+                    // If an image is selected, we can show it in the preview immediately
+                    if (activeFile.type === 'image') {
+                        runCode(); // Run the code to display the image itself
+                        setActiveTab('preview');
+                    }
+                } else {
+                    activeFile.isOpen = !activeFile.isOpen;
+                    activeFolderId = activeFile.id;
+                    currentFileLabel.textContent = `Folder: ${activeFile.name}`; 
+                    currentFileLabelMobile.textContent = `Folder: ${activeFile.name}`; 
+                    activeFile = null; // De-select file when a folder is clicked
+                    codeEditor.value = '';
+                    runButton.disabled = true;
+                    runButton.title = "Only HTML files can be run directly.";
+                }
+            } else {
+                 activeFolderId = null;
+                 activeFile = null;
+                 codeEditor.value = '';
+                 currentFileLabel.textContent = 'No file selected';
+                 currentFileLabelMobile.textContent = 'No file selected';
+                 runButton.disabled = true;
+            }
+            renderFileList(fileSystem, fileListContainer, 0);
+        }
+
+        // Handle clicks on file list items
+        function handleFileSelection(event) {
+            const itemElement = event.target.closest('.file-item');
+            if (itemElement && renamingFileId === null) {
+                const itemId = itemElement.dataset.itemId;
+                selectFile(itemId);
+                if (window.innerWidth < 640) {
+                    fileExplorer.classList.remove('sidebar-visible');
+                }
+            }
+        }
+
+        // Handle changes in the code editor
+        function handleEditorInput() {
+            if (activeFile && activeFile.type !== 'folder') {
+                activeFile.content = codeEditor.value;
+                saveToLocalStorage();
+            }
+        }
+        
+        // Handle renaming a file or folder
+        function handleRename(newName, itemId) {
+            newName = newName.trim();
+            renamingFileId = null;
+
+            if (!newName) {
+                showModalMessage('Name cannot be empty.', 'Error');
+                renderFileList(fileSystem, fileListContainer, 0);
+                return;
+            }
+
+            const item = findItemById(fileSystem, itemId);
+            if (item) {
+                const parent = findParent(fileSystem, itemId);
+                const itemsInParent = parent ? parent.children : fileSystem;
+                const existingItem = findItemByName(itemsInParent, newName);
+
+                if (existingItem && existingItem.id !== itemId) {
+                    showModalMessage(`A file or folder named "${newName}" already exists in this location.`, 'Error');
+                    renderFileList(fileSystem, fileListContainer, 0);
+                    return;
+                }
+
+                item.name = newName;
+                if (activeFile && activeFile.id === item.id) {
+                    currentFileLabel.textContent = item.name;
+                    currentFileLabelMobile.textContent = item.name;
+                }
+                saveToLocalStorage();
+            }
+            renderFileList(fileSystem, fileListContainer, 0);
+        }
+
+        // Function to create a new item in a specified parent folder
+        function createItem(name, type, parentId) {
+            const parent = parentId ? findItemById(fileSystem, parentId) : null;
+            const targetList = parent ? parent.children : fileSystem;
+
+            if (findItemByName(targetList, name)) {
+                showModalMessage(`A file or folder with the name "${name}" already exists.`, 'Error');
+                return null;
+            }
+
+            const newItem = {
+                id: crypto.randomUUID(),
+                name: name,
+                type: type
+            };
+
+            if (type === 'file') {
+                 newItem.content = '';
+                 const fileExtension = name.split('.').pop().toLowerCase();
+                 if (['html', 'htm'].includes(fileExtension)) {
+                     newItem.type = 'html';
+                 } else if (fileExtension === 'css') {
+                     newItem.type = 'css';
+                 } else if (fileExtension === 'js') {
+                     newItem.type = 'js';
+                 } else {
+                     newItem.type = 'text';
+                 }
+            } else if (type === 'folder') {
+                newItem.isOpen = false;
+                newItem.children = [];
+            }
+            
+            targetList.push(newItem);
+            saveToLocalStorage();
+            return newItem;
+        }
+
+        // Handle creating a new file
+        function createNewFile(fileName, parentId) {
+            fileName = fileName.trim();
+            if (!fileName) {
+                showModalMessage('File name cannot be empty.', 'Error');
+                return;
+            }
+
+            const newFile = createItem(fileName, 'file', parentId);
+            if (newFile) {
+                selectFile(newFile.id);
+                codeEditor.value = newFile.content;
+                newFileModal.classList.add('hidden');
+                newFileNameInput.value = '';
+            }
+        }
+        
+        // Handle creating a new folder
+        function createNewFolder(folderName, parentId) {
+            folderName = folderName.trim();
+            if (!folderName) {
+                showModalMessage('Folder name cannot be empty.', 'Error');
+                return;
+            }
+
+            const newFolder = createItem(folderName, 'folder', parentId);
+            if (newFolder) {
+                renderFileList(fileSystem, fileListContainer, 0);
+                newFolderModal.classList.add('hidden');
+                newFolderNameInput.value = '';
+            }
+        }
+
+        // Handle file uploads, now with support for images
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+            
+            let filesToProcess = files.length;
+            
+            // A function to find or create a folder based on a path array
+            const findOrCreateFolder = (parentList, path) => {
+                let currentList = parentList;
+                for (const folderName of path) {
+                    let folder = findItemByName(currentList, folderName);
+                    if (!folder || folder.type !== 'folder') {
+                        folder = {
+                            id: crypto.randomUUID(),
+                            name: folderName,
+                            type: 'folder',
+                            isOpen: false,
+                            children: []
+                        };
+                        currentList.push(folder);
+                    }
+                    currentList = folder.children;
+                }
+                return currentList;
+            };
+
+            const processFile = (file) => {
+                const fullPath = file.webkitRelativePath.split('/');
+                const fileName = fullPath.pop();
+                const folderPath = fullPath;
+                
+                const parentList = folderPath.length > 0 ? findOrCreateFolder(fileSystem, folderPath) : fileSystem;
+
+                if (findItemByName(parentList, fileName)) {
+                    showModalMessage(`A file or folder named "${fileName}" already exists.`, 'Error');
+                    filesToProcess--;
+                    return;
+                }
+
+                const newFile = {
+                    id: crypto.randomUUID(),
+                    name: fileName,
+                };
+                
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        newFile.content = e.target.result;
+                        newFile.type = 'image';
+                        parentList.push(newFile);
+                        filesToProcess--;
+                        if (filesToProcess === 0) {
+                            selectFile(newFile.id);
+                            saveToLocalStorage();
+                            renderFileList(fileSystem, fileListContainer, 0);
+                        }
+                    };
+                    reader.readAsDataURL(file); // Read as a data URL for images
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        newFile.content = e.target.result;
+                        const fileExtension = fileName.split('.').pop().toLowerCase();
+                        if (['html', 'htm'].includes(fileExtension)) {
+                            newFile.type = 'html';
+                        } else if (fileExtension === 'css') {
+                            newFile.type = 'css';
+                        } else if (fileExtension === 'js') {
+                            newFile.type = 'js';
+                        } else {
+                            newFile.type = 'text';
+                        }
+                        parentList.push(newFile);
+                        filesToProcess--;
+                        if (filesToProcess === 0) {
+                            selectFile(newFile.id);
+                            saveToLocalStorage();
+                            renderFileList(fileSystem, fileListContainer, 0);
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            
+            for (let i = 0; i < files.length; i++) {
+                processFile(files[i]);
+            }
+
+            event.target.value = ''; // Reset input to allow uploading the same file again
+        }
+
+        // Run the HTML code in the iframe with all linked files
+        function runCode() {
+            if (!activeFile) {
+                // If the selected file is not runnable, but is an image, display it directly
+                if (activeFile && activeFile.type === 'image') {
+                    const iframeDoc = previewFrame.contentDocument;
+                    iframeDoc.open();
+                    iframeDoc.write(`<img src="${activeFile.content}" alt="${activeFile.name}" class="max-w-full max-h-full">`);
+                    iframeDoc.close();
+                    return;
+                }
+                return;
+            }
+
+            // For HTML files, process all linked assets
+            let htmlContent = activeFile.content;
+            const iframeDoc = previewFrame.contentDocument;
+
+            const findLinkedFile = (name) => {
+                const searchItems = (items) => {
+                    for (const item of items) {
+                        if (item.type !== 'folder' && item.name === name) {
+                            return item;
+                        }
+                        if (item.type === 'folder' && item.children) {
+                            const found = searchItems(item.children);
+                            if (found) return found;
+                        }
+                    }
+                    return null;
+                };
+                return searchItems(fileSystem);
+            };
+            
+            // Find and inline linked CSS and JS files
+            let processedHtml = htmlContent;
+
+            // Process CSS links
+            processedHtml = processedHtml.replace(/<link[^>]+href="([^"]+)"[^>]*>/g, (match, href) => {
+                const linkedFile = findLinkedFile(href.replace('./', ''));
+                if (linkedFile && linkedFile.type === 'css') {
+                    return `<style>${linkedFile.content}</style>`;
+                }
+                return match; // Return original if file not found
+            });
+
+            // Process JS script tags
+            processedHtml = processedHtml.replace(/<script[^>]+src="([^"]+)"[^>]*><\/script>/g, (match, src) => {
+                const linkedFile = findLinkedFile(src.replace('./', ''));
+                if (linkedFile && linkedFile.type === 'js') {
+                    return `<script>${linkedFile.content}<\/script>`;
+                }
+                return match; // Return original if file not found
+            });
+
+            // Process image tags, replacing src with base64 data URLs
+            processedHtml = processedHtml.replace(/<img[^>]+src="([^"]+)"[^>]*>/g, (match, src) => {
+                const linkedFile = findLinkedFile(src.replace('./', ''));
+                if (linkedFile && linkedFile.type === 'image') {
+                    // Update the src attribute with the base64 content
+                    return match.replace(src, linkedFile.content);
+                }
+                return match;
+            });
+            
+            iframeDoc.open();
+            iframeDoc.write(processedHtml);
+            iframeDoc.close();
+        }
+        
+        // A custom message box instead of alert()
+        function showModalMessage(message, title = 'Message') {
+            messageModalTitle.textContent = title;
+            messageModalContent.textContent = message;
+            messageModal.classList.remove('hidden');
+        }
+
+        // --- Event Listeners and Initialization ---
+
+        // Initial setup
+        loadFromLocalStorage();
+        renderFileList(fileSystem, fileListContainer, 0);
+        if (fileSystem.length > 0) {
+            selectFile(fileSystem[0].id);
+        }
+        setActiveTab('editor'); // Set initial active tab
+
+        fileListContainer.addEventListener('click', handleFileSelection);
+        codeEditor.addEventListener('input', handleEditorInput);
+        runButton.addEventListener('click', () => {
+            runCode();
+            setActiveTab('preview');
+        });
+        editorTab.addEventListener('click', () => setActiveTab('editor'));
+        previewTab.addEventListener('click', () => {
+            setActiveTab('preview');
+            runCode();
+        });
+        addFileBtn.addEventListener('click', () => newFileModal.classList.remove('hidden'));
+        addFolderBtn.addEventListener('click', () => newFolderModal.classList.remove('hidden'));
+        cancelNewFileBtn.addEventListener('click', () => {
+            newFileModal.classList.add('hidden');
+            newFileNameInput.value = '';
+        });
+        createFileBtn.addEventListener('click', () => createNewFile(newFileNameInput.value, activeFolderId));
+        cancelNewFolderBtn.addEventListener('click', () => {
+            newFolderModal.classList.add('hidden');
+            newFolderNameInput.value = '';
+        });
+        createFolderBtn.addEventListener('click', () => createNewFolder(newFolderNameInput.value, activeFolderId));
+        uploadFileBtn.addEventListener('click', () => fileUploadInput.click());
+        fileUploadInput.addEventListener('change', handleFileUpload);
+        closeMessageBtn.addEventListener('click', () => messageModal.classList.add('hidden'));
+
+        // Mobile sidebar toggle
+        toggleSidebarBtn.addEventListener('click', () => fileExplorer.classList.toggle('sidebar-visible'));
+        closeSidebarBtn.addEventListener('click', () => fileExplorer.classList.remove('sidebar-visible'));
+
+
+        // Disable Run button initially
+        runButton.disabled = true;
+        runButton.title = "Select an HTML file to run.";
+        // Function to set the active tab (Editor or Preview)
+        function setActiveTab(tab) {
+            editorTab.classList.remove('text-blue-500', 'bg-gray-700');
+            previewTab.classList.remove('text-blue-500', 'bg-gray-700');
+            editorPane.classList.add('hidden');
+            previewPane.classList.add('hidden');
+
+            if (tab === 'editor') {
+                editorTab.classList.add('text-blue-500', 'bg-gray-700');
+                editorPane.classList.remove('hidden');
+            } else if (tab === 'preview') {
+                previewTab.classList.add('text-blue-500', 'bg-gray-700');
+                previewPane.classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
