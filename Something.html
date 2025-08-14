@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chat Loader</title>
 <style>
-body { font-family: Arial; margin: 0; padding: 20px; }
+body { font-family: Arial, sans-serif; margin: 20px; }
 #loginDiv, #chatDiv { max-width: 500px; margin: auto; }
-#messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; background: #f9f9f9; }
-input, button { width: 100%; margin: 5px 0; padding: 10px; box-sizing: border-box; }
-#status { margin-bottom: 10px; }
+#messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background: #f9f9f9; }
+input { padding: 5px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+button { padding: 5px 10px; width: 100%; margin-bottom: 5px; }
+#mobileLoginBtn { display: none; } /* hide by default */
 </style>
 </head>
 <body>
@@ -19,8 +19,8 @@ input, button { width: 100%; margin: 5px 0; padding: 10px; box-sizing: border-bo
   <input type="text" id="username" placeholder="Username">
   <input type="password" id="password" placeholder="Password">
   <button id="loginBtn">Login</button>
+  <button id="mobileLoginBtn">Login (Mobile)</button>
   <p id="loginStatus"></p>
-  <p id="status">Disconnected</p>
 </div>
 
 <div id="chatDiv" style="display:none;">
@@ -28,18 +28,28 @@ input, button { width: 100%; margin: 5px 0; padding: 10px; box-sizing: border-bo
   <div id="messages"></div>
   <input type="text" id="msgInput" placeholder="Type a message">
   <button id="sendBtn">Send</button>
-  <p id="statusChat">Disconnected</p>
+  <p id="connStatus">Disconnected</p>
 </div>
 
 <script>
 let ws = null;
 let username = null;
 
+function isMobile() {
+  return /Mobi|Android/i.test(navigator.userAgent);
+}
+
+if(isMobile()){
+  document.getElementById('mobileLoginBtn').style.display = 'block';
+  document.getElementById('loginBtn').style.display = 'none';
+}
+
 async function getServerURL() {
   try {
     const res = await fetch('https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt');
-    return (await res.text()).trim();
-  } catch(e) {
+    const text = await res.text();
+    return text.trim();
+  } catch (e) {
     alert('Failed to fetch chat server URL');
   }
 }
@@ -50,17 +60,10 @@ async function initWebSocket() {
 
   ws = new WebSocket(serverURL);
 
-  ws.onopen = () => {
-    updateStatus('Connected');
-  };
-  ws.onclose = () => {
-    updateStatus('Disconnected');
-  };
-  ws.onerror = () => {
-    updateStatus('Error');
-  };
-
-  ws.onmessage = msg => {
+  ws.onopen = () => document.getElementById('connStatus').innerText = 'Connected';
+  ws.onclose = () => document.getElementById('connStatus').innerText = 'Disconnected';
+  
+  ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
     if (data.type === 'login') {
       if (data.success) {
@@ -72,40 +75,32 @@ async function initWebSocket() {
     }
     if (data.type === 'message') {
       const messagesDiv = document.getElementById('messages');
-      messagesDiv.innerHTML += `<div><b>${data.user}:</b> ${data.text}</div>`;
+      messagesDiv.innerHTML += `<div>${data.username}:${data.text}</div>`;
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
   };
 }
 
-function updateStatus(text) {
-  document.getElementById('status').innerText = text;
-  document.getElementById('statusChat').innerText = text;
-}
-
-function login() {
+async function doLogin(){
   username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
   if (!username || !password) return alert('Enter username and password');
-  if (!ws) initWebSocket().then(() => {
-    ws.send(JSON.stringify({ type: 'login', username, password }));
-  });
-  else ws.send(JSON.stringify({ type: 'login', username, password }));
+
+  if (!ws || ws.readyState !== WebSocket.OPEN) await initWebSocket();
+  ws.send(JSON.stringify({ type: 'login', username, password }));
 }
 
-// Event listeners for mobile touch
-document.getElementById('loginBtn').addEventListener('click', login);
-document.getElementById('loginBtn').addEventListener('touchend', login);
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('mobileLoginBtn').addEventListener('touchend', doLogin);
 
 document.getElementById('sendBtn').addEventListener('click', () => {
-  const text = document.getElementById('msgInput').value.trim();
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
   if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify({ type: 'message', text }));
-  document.getElementById('msgInput').value = '';
-});
-document.getElementById('sendBtn').addEventListener('touchend', () => {
-  document.getElementById('sendBtn').click();
+  input.value = '';
 });
 </script>
+
 </body>
 </html>
