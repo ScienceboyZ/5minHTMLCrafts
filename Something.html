@@ -3,13 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat Loader</title>
+<title>Chat App</title>
 <style>
-body { font-family: Arial; margin: 0; padding: 20px; }
-#loginDiv, #chatDiv { max-width: 500px; margin: auto; }
-#messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; background: #f9f9f9; }
-input, button { width: 100%; margin: 5px 0; padding: 10px; box-sizing: border-box; }
-#status { margin-bottom: 10px; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: #f4f4f4;
+}
+
+#loginDiv, #chatDiv {
+  max-width: 500px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+#messages {
+  border: 1px solid #ccc;
+  height: 300px;
+  overflow-y: scroll;
+  padding: 10px;
+  background: #f9f9f9;
+}
+
+.message {
+  margin: 5px 0;
+  padding: 8px;
+  border-radius: 10px;
+  max-width: 80%;
+}
+
+.message.user {
+  background: #dcf8c6;
+  margin-left: auto;
+  text-align: right;
+}
+
+.message.other {
+  background: #fff;
+  margin-right: auto;
+  text-align: left;
+}
+
+input, button {
+  width: 100%;
+  margin: 5px 0;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+#status {
+  margin-bottom: 10px;
+  font-size: 0.9em;
+  color: gray;
+}
 </style>
 </head>
 <body>
@@ -37,9 +87,9 @@ let username = null;
 
 async function getServerURL() {
   try {
-    const res = await fetch('https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt');
+    const res = await fetch('https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/main/Key.txt');
     return (await res.text()).trim();
-  } catch(e) {
+  } catch (e) {
     alert('Failed to fetch chat server URL');
   }
 }
@@ -50,18 +100,13 @@ async function initWebSocket() {
 
   ws = new WebSocket(serverURL);
 
-  ws.onopen = () => {
-    updateStatus('Connected');
-  };
-  ws.onclose = () => {
-    updateStatus('Disconnected');
-  };
-  ws.onerror = () => {
-    updateStatus('Error');
-  };
+  ws.onopen = () => updateStatus('Connected');
+  ws.onclose = () => updateStatus('Disconnected');
+  ws.onerror = () => updateStatus('Error');
 
   ws.onmessage = msg => {
     const data = JSON.parse(msg.data);
+
     if (data.type === 'login') {
       if (data.success) {
         document.getElementById('loginDiv').style.display = 'none';
@@ -70,9 +115,18 @@ async function initWebSocket() {
         document.getElementById('loginStatus').innerText = 'Login failed';
       }
     }
+
     if (data.type === 'message') {
       const messagesDiv = document.getElementById('messages');
-      messagesDiv.innerHTML += `<div><b>${data.user}:</b> ${data.text}</div>`;
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      if (data.user === username) {
+        messageDiv.classList.add('user');
+      } else {
+        messageDiv.classList.add('other');
+      }
+      messageDiv.innerHTML = `<b>${data.user}:</b> ${data.text}`;
+      messagesDiv.appendChild(messageDiv);
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
   };
@@ -87,15 +141,17 @@ function login() {
   username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
   if (!username || !password) return alert('Enter username and password');
-  if (!ws) initWebSocket().then(() => {
+
+  if (!ws) {
+    initWebSocket().then(() => {
+      ws.send(JSON.stringify({ type: 'login', username, password }));
+    });
+  } else {
     ws.send(JSON.stringify({ type: 'login', username, password }));
-  });
-  else ws.send(JSON.stringify({ type: 'login', username, password }));
+  }
 }
 
-// Event listeners for mobile touch and desktop click
 document.getElementById('loginBtn').addEventListener('click', login);
-document.getElementById('loginBtn').addEventListener('touchend', login);
 
 document.getElementById('sendBtn').addEventListener('click', () => {
   const text = document.getElementById('msgInput').value.trim();
@@ -103,9 +159,7 @@ document.getElementById('sendBtn').addEventListener('click', () => {
   ws.send(JSON.stringify({ type: 'message', text }));
   document.getElementById('msgInput').value = '';
 });
-document.getElementById('sendBtn').addEventListener('touchend', () => {
-  document.getElementById('sendBtn').click();
-});
 </script>
+
 </body>
 </html>
