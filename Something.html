@@ -41,8 +41,12 @@ const messagesDiv = document.getElementById('messages');
 async function getServerURL() {
   try {
     const res = await fetch('https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt');
-    const text = await res.text();
-    return text.trim();
+    let text = await res.text();
+    text = text.trim();
+    if (!text.startsWith('ws://') && !text.startsWith('wss://')) {
+      text = text.replace(/^http/, 'ws'); // convert http(s) -> ws(s)
+    }
+    return text;
   } catch (e) {
     alert('Failed to fetch chat server URL');
   }
