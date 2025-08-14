@@ -1,90 +1,80 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Offline Chat Loader</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-#loginDiv, #chatDiv { max-width: 500px; margin: auto; }
-#messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background: #f9f9f9; }
-input { padding: 5px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-button { padding: 5px 10px; }
-</style>
+    <title>Chat Client</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 10px; }
+        #messages { border: 1px solid #ccc; padding: 5px; height: 300px; overflow-y: scroll; }
+        #inputArea { display: flex; margin-top: 10px; }
+        #messageInput { flex: 1; padding: 5px; }
+        button { padding: 5px; }
+    </style>
 </head>
 <body>
+    <h2>Chat</h2>
+    <div id="messages"></div>
 
-<div id="loginDiv">
-  <h2>Login</h2>
-  <input type="text" id="username" placeholder="Username">
-  <input type="password" id="password" placeholder="Password">
-  <button id="loginBtn">Login</button>
-  <p id="loginStatus"></p>
-</div>
+    <div id="inputArea">
+        <input type="text" id="messageInput" placeholder="Type your message..." />
+        <button id="sendBtn">Send</button>
+    </div>
 
-<div id="chatDiv" style="display:none;">
-  <h2>Chat</h2>
-  <div id="messages"></div>
-  <input type="text" id="msgInput" placeholder="Type a message">
-  <button id="sendBtn">Send</button>
-</div>
+    <script>
+        const keyFileUrl = "https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt";
+        let socket;
 
-<script>
-let ws = null;
-let username = null;
+        async function init() {
+            try {
+                const res = await fetch(keyFileUrl);
+                const wsUrl = (await res.text()).trim();
+                socket = new WebSocket(wsUrl);
 
-// Fetch server URL from GitHub
-async function getServerURL() {
-  try {
-    const res = await fetch('https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt');
-    const text = await res.text();
-    return text.trim();
-  } catch (e) {
-    alert('Failed to fetch chat server URL');
-  }
-}
+                socket.onopen = () => {
+                    addMessage("Connected to server.");
+                };
 
-async function initWebSocket() {
-  const serverURL = await getServerURL();
-  if (!serverURL) return;
+                socket.onmessage = (event) => {
+                    addMessage(event.data);
+                };
 
-  ws = new WebSocket(serverURL);
+                socket.onclose = () => {
+                    addMessage("Disconnected from server.");
+                };
 
-  ws.onopen = () => console.log('Connected to server');
-  ws.onmessage = (msg) => {
-    const data = JSON.parse(msg.data);
-    if (data.type === 'login') {
-      if (data.success) {
-        document.getElementById('loginDiv').style.display = 'none';
-        document.getElementById('chatDiv').style.display = 'block';
-      } else {
-        document.getElementById('loginStatus').innerText = 'Login failed';
-      }
-    }
-    if (data.type === 'message') {
-      const messagesDiv = document.getElementById('messages');
-      messagesDiv.innerHTML += `<div>${data.text}</div>`;
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-  };
-}
+                socket.onerror = (err) => {
+                    console.error("WebSocket error:", err);
+                    addMessage("Error connecting to server.");
+                };
 
-document.getElementById('loginBtn').addEventListener('click', async () => {
-  username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
-  if (!username || !password) return alert('Enter username and password');
+                document.getElementById("sendBtn").onclick = sendMessage;
+                document.getElementById("messageInput").addEventListener("keypress", (e) => {
+                    if (e.key === "Enter") sendMessage();
+                });
 
-  if (!ws) await initWebSocket();
-  ws.send(JSON.stringify({ type: 'login', username, password }));
-});
+            } catch (error) {
+                console.error("Failed to fetch Key.txt:", error);
+                addMessage("Could not load server URL.");
+            }
+        }
 
-document.getElementById('sendBtn').addEventListener('click', () => {
-  const input = document.getElementById('msgInput');
-  const text = input.value.trim();
-  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
-  ws.send(JSON.stringify({ type: 'message', text }));
-  input.value = '';
-});
-</script>
+        function sendMessage() {
+            const input = document.getElementById("messageInput");
+            const text = input.value.trim();
+            if (text && socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(text);
+                input.value = "";
+            }
+        }
 
+        function addMessage(msg) {
+            const div = document.createElement("div");
+            div.textContent = msg;
+            document.getElementById("messages").appendChild(div);
+            document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+        }
+
+        init();
+    </script>
 </body>
 </html>
