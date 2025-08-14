@@ -8,13 +8,8 @@
 body { font-family: Arial; margin: 0; padding: 20px; }
 #loginDiv, #chatDiv { max-width: 500px; margin: auto; }
 #messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; background: #f9f9f9; }
-input { width: 100%; margin: 5px 0; padding: 10px; box-sizing: border-box; }
-button { width: 100%; margin: 10px 0; padding: 15px; box-sizing: border-box; font-size: 16px; border: none; border-radius: 10px; color: #fff; cursor: pointer; }
-#loginBtn { background: linear-gradient(45deg, #4CAF50, #45A049); }
-#loginBtn:active { opacity: 0.8; }
-#sendBtn { background: linear-gradient(45deg, #2196F3, #0b7dda); }
-#sendBtn:active { opacity: 0.8; }
-#status, #statusChat { margin-bottom: 10px; }
+input, button { width: 100%; margin: 5px 0; padding: 10px; box-sizing: border-box; }
+#status { margin-bottom: 10px; }
 </style>
 </head>
 <body>
@@ -40,118 +35,76 @@ button { width: 100%; margin: 10px 0; padding: 15px; box-sizing: border-box; fon
 let ws = null;
 let username = null;
 
-// Fetch server URL
 async function getServerURL() {
   try {
     const res = await fetch('https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt');
     return (await res.text()).trim();
   } catch(e) {
     alert('Failed to fetch chat server URL');
-    return null;
   }
 }
 
-// Initialize WebSocket
 async function initWebSocket() {
-  if(ws && ws.readyState === WebSocket.OPEN) return ws;
-
   const serverURL = await getServerURL();
-  if (!serverURL) return null;
+  if (!serverURL) return;
 
   ws = new WebSocket(serverURL);
 
-  ws.onopen = () => updateStatus('Connected');
-  ws.onclose = () => updateStatus('Disconnected');
-  ws.onerror = () => updateStatus('Error');
-
-  ws.onmessage = msg => {
-    try {
-      const data = JSON.parse(msg.data);
-      if (data.type === 'login') {
-        if (data.success) {
-          document.getElementById('loginDiv').style.display = 'none';
-          document.getElementById('chatDiv').style.display = 'block';
-        } else {
-          document.getElementById('loginStatus').innerText = 'Login failed';
-        }
-      }
-      if (data.type === 'message') {
-        const messagesDiv = document.getElementById('messages');
-        messagesDiv.innerHTML += `<div><b>${data.user}:</b> ${data.text}</div>`;
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-      }
-    } catch(e) { console.error(e); }
+  ws.onopen = () => {
+    updateStatus('Connected');
+  };
+  ws.onclose = () => {
+    updateStatus('Disconnected');
+  };
+  ws.onerror = () => {
+    updateStatus('Error');
   };
 
-  return new Promise(resolve => {
-    ws.addEventListener('open', () => resolve(ws));
-  });
+  ws.onmessage = msg => {
+    const data = JSON.parse(msg.data);
+    if (data.type === 'login') {
+      if (data.success) {
+        document.getElementById('loginDiv').style.display = 'none';
+        document.getElementById('chatDiv').style.display = 'block';
+      } else {
+        document.getElementById('loginStatus').innerText = 'Login failed';
+      }
+    }
+    if (data.type === 'message') {
+      const messagesDiv = document.getElementById('messages');
+      messagesDiv.innerHTML += `<div><b>${data.user}:</b> ${data.text}</div>`;
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+  };
 }
 
-// Update connection status
 function updateStatus(text) {
   document.getElementById('status').innerText = text;
   document.getElementById('statusChat').innerText = text;
 }
 
-// Login function
-async function login(event) {
-  if(event) event.preventDefault();
-
-  username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value.trim();
+function login() {
+  username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
   if (!username || !password) return alert('Enter username and password');
-
-  const loginBtn = document.getElementById('loginBtn');
-  loginBtn.innerText = 'Connecting...';
-  loginBtn.disabled = true;
-
-  const socket = await initWebSocket();
-  if (!socket) {
-    loginBtn.innerText = 'Login';
-    loginBtn.disabled = false;
-    return alert('WebSocket not available');
-  }
-
-  if (socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ type: 'login', username, password }));
-  } else {
-    socket.onopen = () => socket.send(JSON.stringify({ type: 'login', username, password }));
-  }
-
-  loginBtn.innerText = 'Login';
-  loginBtn.disabled = false;
+  if (!ws) initWebSocket().then(() => {
+    ws.send(JSON.stringify({ type: 'login', username, password }));
+  });
+  else ws.send(JSON.stringify({ type: 'login', username, password }));
 }
 
-// Send chat message
-function sendMessage() {
+// Event listeners for mobile touch and desktop click
+document.getElementById('loginBtn').addEventListener('click', login);
+document.getElementById('loginBtn').addEventListener('touchend', login);
+
+document.getElementById('sendBtn').addEventListener('click', () => {
   const text = document.getElementById('msgInput').value.trim();
   if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify({ type: 'message', text }));
   document.getElementById('msgInput').value = '';
-}
-
-// Add touch & click listener
-function addClickTouch(el, fn) {
-  let touched = false;
-  el.addEventListener('touchend', e => {
-    touched = true;
-    fn(e);
-  });
-  el.addEventListener('click', e => {
-    if (!touched) fn(e);
-  });
-}
-
-// Attach listeners
-addClickTouch(document.getElementById('loginBtn'), login);
-addClickTouch(document.getElementById('sendBtn'), sendMessage);
-
-// Scroll input into view on mobile
-['username','password','msgInput'].forEach(id => {
-  document.getElementById(id).addEventListener('focus', e => {
-    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
+});
+document.getElementById('sendBtn').addEventListener('touchend', () => {
+  document.getElementById('sendBtn').click();
 });
 </script>
 </body>
