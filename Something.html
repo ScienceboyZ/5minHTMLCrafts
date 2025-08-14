@@ -5,43 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Messenger</title>
 <style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    background: #f0f0f0;
-  }
-  #login, #chat {
-    display: none;
-    max-width: 600px;
-    margin: auto;
-    padding: 10px;
-  }
+  body { font-family: Arial, sans-serif; margin:0; background:#f0f0f0; }
+  #login, #chat { display: none; max-width:600px; margin:auto; padding:10px; }
   .visible { display: block; }
-  input, button {
-    padding: 10px;
-    font-size: 16px;
-    margin: 5px 0;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  #messages {
-    height: 60vh;
-    overflow-y: auto;
-    background: #fff;
-    border: 1px solid #ccc;
-    padding: 10px;
-    margin-bottom: 5px;
-  }
-  .message {
-    padding: 5px;
-    margin-bottom: 5px;
-    background: #e4e4e4;
-    border-radius: 5px;
-  }
-  .username {
-    font-weight: bold;
-    color: #333;
-  }
+  input, button { padding:10px; font-size:16px; margin:5px 0; width:100%; box-sizing:border-box; }
+  #messages { height:60vh; overflow-y:auto; background:#fff; border:1px solid #ccc; padding:10px; margin-bottom:5px; }
+  .message { padding:5px; margin-bottom:5px; background:#e4e4e4; border-radius:5px; }
+  .username { font-weight:bold; color:#333; }
 </style>
 </head>
 <body>
@@ -61,18 +31,11 @@
 </div>
 
 <script>
-const accounts = {
-  "Kauan": "Nig",
-  "Samuel": "SabrinaC",
-  "Craig": "shrek",
-  "Rory": "skibidi",
-  "Zac": "Thumbs"
-};
-
 let socket;
 let currentUser = null;
 let wsUrl = "";
 
+// Fetch WebSocket URL from GitHub
 async function getWsUrl() {
   try {
     const res = await fetch("https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt");
@@ -83,29 +46,46 @@ async function getWsUrl() {
   }
 }
 
+// Login button handler
 document.getElementById("loginBtn").addEventListener("click", () => {
-  const user = document.getElementById("username").value.trim();
-  const pass = document.getElementById("password").value;
-  if (accounts[user] && accounts[user] === pass) {
-    currentUser = user;
-    document.getElementById("login").classList.remove("visible");
-    document.getElementById("chat").classList.add("visible");
-    connectWebSocket();
-  } else {
-    alert("Invalid username or password");
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+
+  if (!username || !password) {
+    alert("Enter username and password");
+    return;
   }
+
+  currentUser = username;
+  connectWebSocket(username, password);
 });
 
-function connectWebSocket() {
+// Connect and login to WebSocket
+function connectWebSocket(username, password) {
   socket = new WebSocket(wsUrl);
-  
+
   socket.addEventListener("open", () => {
-    console.log("Connected to server");
+    // Send login message immediately
+    socket.send(JSON.stringify({ username, password }));
   });
 
   socket.addEventListener("message", (event) => {
-    const msgData = JSON.parse(event.data);
-    displayMessage(msgData.username, msgData.message);
+    const data = JSON.parse(event.data);
+
+    // Handle system messages (like login success/fail)
+    if (data.username === "System") {
+      if (data.message === "Login successful!") {
+        document.getElementById("login").classList.remove("visible");
+        document.getElementById("chat").classList.add("visible");
+      } else {
+        alert(data.message);
+        socket.close();
+      }
+      return;
+    }
+
+    // Display normal chat messages
+    displayMessage(data.username, data.message);
   });
 
   document.getElementById("sendBtn").addEventListener("click", sendMessage);
@@ -114,14 +94,16 @@ function connectWebSocket() {
   });
 }
 
+// Send chat message
 function sendMessage() {
   const msg = document.getElementById("msgInput").value.trim();
   if (msg && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ username: currentUser, message: msg }));
+    socket.send(JSON.stringify({ message: msg }));
     document.getElementById("msgInput").value = "";
   }
 }
 
+// Display message in chat
 function displayMessage(username, message) {
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message");
@@ -132,6 +114,5 @@ function displayMessage(username, message) {
 
 getWsUrl();
 </script>
-
 </body>
 </html>
