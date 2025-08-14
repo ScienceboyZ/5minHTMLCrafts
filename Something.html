@@ -9,9 +9,12 @@ body { font-family: Arial, sans-serif; margin: 20px; }
 #messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background: #f9f9f9; }
 input { padding: 5px; margin: 5px 0; width: 100%; box-sizing: border-box; }
 button { padding: 5px 10px; }
+#status { text-align: center; margin-bottom: 10px; font-weight: bold; }
 </style>
 </head>
 <body>
+
+<div id="status">Disconnected</div>
 
 <div id="loginDiv">
   <h2>Login</h2>
@@ -32,6 +35,9 @@ button { padding: 5px 10px; }
 let ws = null;
 let username = null;
 
+const statusDiv = document.getElementById('status');
+const messagesDiv = document.getElementById('messages');
+
 async function getServerURL() {
   try {
     const res = await fetch('https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt');
@@ -48,7 +54,24 @@ async function initWebSocket() {
 
   ws = new WebSocket(serverURL);
 
-  ws.onopen = () => console.log('Connected to server');
+  ws.onopen = () => {
+    console.log('Connected to server');
+    statusDiv.innerText = 'Connected';
+    statusDiv.style.color = 'green';
+  };
+
+  ws.onclose = () => {
+    console.log('Disconnected from server');
+    statusDiv.innerText = 'Disconnected';
+    statusDiv.style.color = 'red';
+  };
+
+  ws.onerror = () => {
+    console.log('WebSocket error');
+    statusDiv.innerText = 'Error';
+    statusDiv.style.color = 'orange';
+  };
+
   ws.onmessage = (msg) => {
     const data = JSON.parse(msg.data);
     if (data.type === 'login') {
@@ -60,7 +83,6 @@ async function initWebSocket() {
       }
     }
     if (data.type === 'message') {
-      const messagesDiv = document.getElementById('messages');
       messagesDiv.innerHTML += `<div>${data.text}</div>`;
       messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
@@ -72,7 +94,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   const password = document.getElementById('password').value;
   if (!username || !password) return alert('Enter username and password');
 
-  if (!ws) await initWebSocket();
+  if (!ws || ws.readyState !== WebSocket.OPEN) await initWebSocket();
   ws.send(JSON.stringify({ type: 'login', username, password }));
 });
 
