@@ -2,117 +2,88 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Messenger</title>
+<title>Chat Loader</title>
 <style>
-  body { font-family: Arial, sans-serif; margin:0; background:#f0f0f0; }
-  #login, #chat { display: none; max-width:600px; margin:auto; padding:10px; }
-  .visible { display: block; }
-  input, button { padding:10px; font-size:16px; margin:5px 0; width:100%; box-sizing:border-box; }
-  #messages { height:60vh; overflow-y:auto; background:#fff; border:1px solid #ccc; padding:10px; margin-bottom:5px; }
-  .message { padding:5px; margin-bottom:5px; background:#e4e4e4; border-radius:5px; }
-  .username { font-weight:bold; color:#333; }
+body { font-family: Arial, sans-serif; margin: 20px; }
+#loginDiv, #chatDiv { max-width: 500px; margin: auto; }
+#messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background: #f9f9f9; }
+input { padding: 5px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+button { padding: 5px 10px; }
 </style>
 </head>
 <body>
 
-<div id="login" class="visible">
+<div id="loginDiv">
   <h2>Login</h2>
-  <input id="username" placeholder="Username">
-  <input id="password" type="password" placeholder="Password">
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
   <button id="loginBtn">Login</button>
+  <p id="loginStatus"></p>
 </div>
 
-<div id="chat">
-  <h2>Messenger</h2>
+<div id="chatDiv" style="display:none;">
+  <h2>Chat</h2>
   <div id="messages"></div>
-  <input id="msgInput" placeholder="Type your message...">
+  <input type="text" id="msgInput" placeholder="Type a message">
   <button id="sendBtn">Send</button>
 </div>
 
 <script>
-let socket;
-let currentUser = null;
-let wsUrl = "";
+let ws = null;
+let username = null;
 
-// Fetch WebSocket URL from GitHub
-async function getWsUrl() {
+async function getServerURL() {
   try {
-    const res = await fetch("https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt");
-    wsUrl = (await res.text()).trim();
-    console.log("WebSocket URL:", wsUrl);
-  } catch (err) {
-    alert("Failed to get server URL from GitHub");
+    const res = await fetch('https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt');
+    const text = await res.text();
+    return text.trim();
+  } catch (e) {
+    alert('Failed to fetch chat server URL');
   }
 }
 
-// Login button handler
-document.getElementById("loginBtn").addEventListener("click", () => {
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value;
+async function initWebSocket() {
+  const serverURL = await getServerURL();
+  if (!serverURL) return;
 
-  if (!username || !password) {
-    alert("Enter username and password");
-    return;
-  }
+  ws = new WebSocket(serverURL);
 
-  currentUser = username;
-  connectWebSocket(username, password);
+  ws.onopen = () => console.log('Connected to server');
+  ws.onmessage = (msg) => {
+    const data = JSON.parse(msg.data);
+    if (data.type === 'login') {
+      if (data.success) {
+        document.getElementById('loginDiv').style.display = 'none';
+        document.getElementById('chatDiv').style.display = 'block';
+      } else {
+        document.getElementById('loginStatus').innerText = 'Login failed';
+      }
+    }
+    if (data.type === 'message') {
+      const messagesDiv = document.getElementById('messages');
+      messagesDiv.innerHTML += `<div>${data.text}</div>`;
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+  };
+}
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  if (!username || !password) return alert('Enter username and password');
+
+  if (!ws) await initWebSocket();
+  ws.send(JSON.stringify({ type: 'login', username, password }));
 });
 
-// Connect and login to WebSocket
-function connectWebSocket(username, password) {
-  socket = new WebSocket(wsUrl);
-
-  socket.addEventListener("open", () => {
-    // Send login message immediately
-    socket.send(JSON.stringify({ username, password }));
-  });
-
-  socket.addEventListener("message", (event) => {
-    const data = JSON.parse(event.data);
-
-    // Handle system messages (like login success/fail)
-    if (data.username === "System") {
-      if (data.message === "Login successful!") {
-        document.getElementById("login").classList.remove("visible");
-        document.getElementById("chat").classList.add("visible");
-      } else {
-        alert(data.message);
-        socket.close();
-      }
-      return;
-    }
-
-    // Display normal chat messages
-    displayMessage(data.username, data.message);
-  });
-
-  document.getElementById("sendBtn").addEventListener("click", sendMessage);
-  document.getElementById("msgInput").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") sendMessage();
-  });
-}
-
-// Send chat message
-function sendMessage() {
-  const msg = document.getElementById("msgInput").value.trim();
-  if (msg && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ message: msg }));
-    document.getElementById("msgInput").value = "";
-  }
-}
-
-// Display message in chat
-function displayMessage(username, message) {
-  const msgDiv = document.createElement("div");
-  msgDiv.classList.add("message");
-  msgDiv.innerHTML = `<div class="username">${username}</div>${message}`;
-  document.getElementById("messages").appendChild(msgDiv);
-  document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
-}
-
-getWsUrl();
+document.getElementById('sendBtn').addEventListener('click', () => {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: 'message', text }));
+  input.value = '';
+});
 </script>
+
 </body>
 </html>
