@@ -1,80 +1,137 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Chat Client</title>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 10px; }
-        #messages { border: 1px solid #ccc; padding: 5px; height: 300px; overflow-y: scroll; }
-        #inputArea { display: flex; margin-top: 10px; }
-        #messageInput { flex: 1; padding: 5px; }
-        button { padding: 5px; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Messenger</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #f0f0f0;
+  }
+  #login, #chat {
+    display: none;
+    max-width: 600px;
+    margin: auto;
+    padding: 10px;
+  }
+  .visible { display: block; }
+  input, button {
+    padding: 10px;
+    font-size: 16px;
+    margin: 5px 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  #messages {
+    height: 60vh;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 5px;
+  }
+  .message {
+    padding: 5px;
+    margin-bottom: 5px;
+    background: #e4e4e4;
+    border-radius: 5px;
+  }
+  .username {
+    font-weight: bold;
+    color: #333;
+  }
+</style>
 </head>
 <body>
-    <h2>Chat</h2>
-    <div id="messages"></div>
 
-    <div id="inputArea">
-        <input type="text" id="messageInput" placeholder="Type your message..." />
-        <button id="sendBtn">Send</button>
-    </div>
+<div id="login" class="visible">
+  <h2>Login</h2>
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
+  <button id="loginBtn">Login</button>
+</div>
 
-    <script>
-        const keyFileUrl = "https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt";
-        let socket;
+<div id="chat">
+  <h2>Messenger</h2>
+  <div id="messages"></div>
+  <input id="msgInput" placeholder="Type your message...">
+  <button id="sendBtn">Send</button>
+</div>
 
-        async function init() {
-            try {
-                const res = await fetch(keyFileUrl);
-                const wsUrl = (await res.text()).trim();
-                socket = new WebSocket(wsUrl);
+<script>
+const accounts = {
+  "Kauan": "Nig",
+  "Samuel": "SabrinaC",
+  "Craig": "shrek",
+  "Rory": "skibidi",
+  "Zac": "Thumbs"
+};
 
-                socket.onopen = () => {
-                    addMessage("Connected to server.");
-                };
+let socket;
+let currentUser = null;
+let wsUrl = "";
 
-                socket.onmessage = (event) => {
-                    addMessage(event.data);
-                };
+async function getWsUrl() {
+  try {
+    const res = await fetch("https://raw.githubusercontent.com/BlankoTheLegend/VeryHardAlgebra/refs/heads/main/Key.txt");
+    wsUrl = (await res.text()).trim();
+    console.log("WebSocket URL:", wsUrl);
+  } catch (err) {
+    alert("Failed to get server URL from GitHub");
+  }
+}
 
-                socket.onclose = () => {
-                    addMessage("Disconnected from server.");
-                };
+document.getElementById("loginBtn").addEventListener("click", () => {
+  const user = document.getElementById("username").value.trim();
+  const pass = document.getElementById("password").value;
+  if (accounts[user] && accounts[user] === pass) {
+    currentUser = user;
+    document.getElementById("login").classList.remove("visible");
+    document.getElementById("chat").classList.add("visible");
+    connectWebSocket();
+  } else {
+    alert("Invalid username or password");
+  }
+});
 
-                socket.onerror = (err) => {
-                    console.error("WebSocket error:", err);
-                    addMessage("Error connecting to server.");
-                };
+function connectWebSocket() {
+  socket = new WebSocket(wsUrl);
+  
+  socket.addEventListener("open", () => {
+    console.log("Connected to server");
+  });
 
-                document.getElementById("sendBtn").onclick = sendMessage;
-                document.getElementById("messageInput").addEventListener("keypress", (e) => {
-                    if (e.key === "Enter") sendMessage();
-                });
+  socket.addEventListener("message", (event) => {
+    const msgData = JSON.parse(event.data);
+    displayMessage(msgData.username, msgData.message);
+  });
 
-            } catch (error) {
-                console.error("Failed to fetch Key.txt:", error);
-                addMessage("Could not load server URL.");
-            }
-        }
+  document.getElementById("sendBtn").addEventListener("click", sendMessage);
+  document.getElementById("msgInput").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage();
+  });
+}
 
-        function sendMessage() {
-            const input = document.getElementById("messageInput");
-            const text = input.value.trim();
-            if (text && socket && socket.readyState === WebSocket.OPEN) {
-                socket.send(text);
-                input.value = "";
-            }
-        }
+function sendMessage() {
+  const msg = document.getElementById("msgInput").value.trim();
+  if (msg && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ username: currentUser, message: msg }));
+    document.getElementById("msgInput").value = "";
+  }
+}
 
-        function addMessage(msg) {
-            const div = document.createElement("div");
-            div.textContent = msg;
-            document.getElementById("messages").appendChild(div);
-            document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
-        }
+function displayMessage(username, message) {
+  const msgDiv = document.createElement("div");
+  msgDiv.classList.add("message");
+  msgDiv.innerHTML = `<div class="username">${username}</div>${message}`;
+  document.getElementById("messages").appendChild(msgDiv);
+  document.getElementById("messages").scrollTop = document.getElementById("messages").scrollHeight;
+}
 
-        init();
-    </script>
+getWsUrl();
+</script>
+
 </body>
 </html>
