@@ -94,7 +94,14 @@
     "emoji": "📜",
     "description": "...",
     "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/Something.html"
+  },
+  {
+    "name": "Cookie",
+    "emoji": "🍪",
+    "description": "Click a cookie I guess?",
+    "htmlUrl": "https://raw.githubusercontent.com/ScienceboyZ/5minHTMLCrafts/main/CookieClicker.html"
   }
 ]
+
 
 
