@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cooked Cookie Clicker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f7f3e9;
+      padding: 50px;
+      overflow-x: hidden;
+    }
+
+    h1 { font-size: 2.5rem; margin-bottom: 10px; }
+    #score { font-size: 2rem; color: #d2691e; }
+    #clicker {
+      font-size: 12rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.1s ease-in-out;
+      position: relative;
+      z-index: 1;
+    }
+    #clicker:active { transform: scale(0.9); }
+
+    .upgrade, #rebirth, #unlockBtn {
+      display: inline-block;
+      margin: 8px;
+      padding: 10px 20px;
+      background: #ffd27f;
+      border: 2px solid #d18b00;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      z-index: 1;
+    }
+    .upgrade:hover:not(:disabled),
+    #rebirth:hover:not(:disabled),
+    #unlockBtn:hover:not(:disabled) {
+      background: #ffe8b2;
+    }
+    .upgrade:disabled,
+    #rebirth:disabled {
+      background: #ccc;
+      border-color: #999;
+      cursor: not-allowed;
+    }
+
+    #status {
+      margin: 20px 0;
+      font-size: 1.1rem;
+      z-index: 1;
+    }
+
+    /* OVERLAY BASE */
+    #rebirthOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    #rebirthOverlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* FLAMES (only when .active) */
+    #rebirthOverlay.active .flames {
+      position: absolute;
+      width: 100%; height: 100%;
+      background: radial-gradient(circle at center,
+        rgba(255,200,0,0.8),
+        rgba(255,0,0,0.6) 70%,
+        rgba(0,0,0,0));
+      animation:
+        flicker 0.2s infinite alternate,
+        fadeFlames 2s ease-out forwards;
+    }
+
+    @keyframes flicker {
+      from { opacity: 1; }
+      to   { opacity: 0.7; }
+    }
+    @keyframes fadeFlames {
+      0%   { opacity: 0; }
+      10%  { opacity: 1; }
+      80%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* ANGEL & DEMON (only when .active) */
+    #rebirthOverlay .angel,
+    #rebirthOverlay .demon {
+      position: absolute;
+      top: 50%;
+      font-size: 6rem;
+      transform: translateY(-50%);
+      opacity: 0;
+    }
+    #rebirthOverlay.active .angel {
+      left: -20%;
+      animation: angelIn 2s ease-in-out forwards;
+    }
+    #rebirthOverlay.active .demon {
+      right: -20%;
+      animation: demonIn 2s ease-in-out forwards;
+    }
+    @keyframes angelIn {
+      0%   { left: -20%; opacity: 0; transform: translateY(-50%) scale(1); }
+      40%  { left: 50%; opacity: 1; transform: translate(-50%,-50%) scale(1); }
+      50%  { transform: translate(-50%,-50%) scale(2); }
+      60%  { opacity: 0; transform: translate(-50%,-50%) scale(2.5); }
+      100% { left: -50%; opacity: 0; transform: translate(-50%,-50%) scale(0); }
+    }
+    @keyframes demonIn {
+      0%   { right: -20%; opacity: 0; transform: translateY(-50%) scale(1); }
+      40%  { right: 50%; opacity: 1; transform: translate(50%,-50%) scale(1); }
+      50%  { transform: translate(50%,-50%) scale(2); }
+      60%  { opacity: 0; transform: translate(50%,-50%) scale(2.5); }
+      100% { right: -50%; opacity: 0; transform: translate(50%,-50%) scale(0); }
+    }
+
+    /* CHEAT & UPGRADES PANEL */
+    #cheatPanel { margin-bottom: 20px; }
+    #cookieEditor { margin-top: 10px; }
+    #upgrades {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      background: #fff8e1;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Cooked Cookie Clicker</h1>
+
+  <div id="cheatPanel">
+    <input type="text" id="cheatCode" placeholder="Enter code..." />
+    <button id="unlockBtn">Unlock</button>
+    <div id="cookieEditor" style="display:none;">
+      <input type="number" id="cookieInput" placeholder="Set cookies..." />
+      <button id="setCookieBtn">Set</button>
+    </div>
+  </div>
+
+  <p>Cookies: <span id="score">0</span></p>
+  <button id="clicker">🍪</button>
+
+  <div id="status">
+    <p>Rebirths: <span id="rebirthCount">0</span></p>
+    <p>Multiplier: <span id="multiplier">1×</span></p>
+  </div>
+
+  <h2>Upgrades</h2>
+  <div id="upgrades"></div>
+
+  <h2>Rebirth</h2>
+  <button id="rebirth" disabled>Rebirth (Cost: 0)</button>
+
+  <!-- OVERLAY -->
+  <div id="rebirthOverlay">
+    <div class="flames"></div>
+    <div class="angel">👼</div>
+    <div class="demon">😈</div>
+  </div>
+
+  <script>
+    let score = 0, rebirths = 0;
+    const baseRebirthCost = 10000;
+    const upgradeList = [
+      { name:"+1/click",    cost:10,        inc:1    },
+      { name:"+5/click",    cost:50,        inc:5    },
+      { name:"+10/click",   cost:200,       inc:10   },
+      { name:"+50/click",   cost:1000,      inc:50   },
+      { name:"+100/click",  cost:5000,      inc:100  },
+      { name:"+500/click",  cost:20000,     inc:500  },
+      { name:"+1 000/click",cost:100000,    inc:1000 },
+      { name:"+5 000/click",cost:500000,    inc:5000 },
+      { name:"+10 000/click",cost:1000000,  inc:10000},
+      { name:"+50 000/click",cost:5000000,  inc:50000},
+      { name:"+100 000/click",cost:10000000,inc:100000},
+      { name:"+500 000/click",cost:50000000,inc:500000}
+    ];
+    let purchased = Array(upgradeList.length).fill(0);
+
+    const scoreEl       = document.getElementById("score");
+    const clicker       = document.getElementById("clicker");
+    const upgradesDiv   = document.getElementById("upgrades");
+    const rebirthBtn    = document.getElementById("rebirth");
+    const rebirthCountE = document.getElementById("rebirthCount");
+    const multiplierE   = document.getElementById("multiplier");
+    const overlay       = document.getElementById("rebirthOverlay");
+    const cheatCodeIn   = document.getElementById("cheatCode");
+    const unlockBtn     = document.getElementById("unlockBtn");
+    const cookieEditor  = document.getElementById("cookieEditor");
+    const cookieInput   = document.getElementById("cookieInput");
+    const setCookieBtn  = document.getElementById("setCookieBtn");
+
+    function getRebirthCost() {
+      return baseRebirthCost * (rebirths + 1);
+    }
+    function getBaseClick() {
+      return upgradeList.reduce((sum,u,i)=>sum+u.inc*purchased[i],1);
+    }
+    function getMultiplier() {
+      return 1 + rebirths * 0.2;
+    }
+    function getClickValue() {
+      return getBaseClick() * getMultiplier();
+    }
+
+    function updateUI() {
+      scoreEl.textContent = Math.floor(score);
+      rebirthCountE.textContent = rebirths;
+      multiplierE.textContent = getMultiplier().toFixed(1) + "×";
+
+      // Rebirth button
+      const cost = getRebirthCost();
+      rebirthBtn.textContent = `Rebirth (Cost: ${cost.toLocaleString()})`;
+      rebirthBtn.disabled = score < cost;
+
+      // Upgrades list
+      upgradesDiv.innerHTML = "";
+      upgradeList.forEach((u,i) => {
+        const btn = document.createElement("button");
+        btn.className = "upgrade";
+        btn.textContent = `${u.name} (Cost: ${u.cost.toLocaleString()}) [Owned: ${purchased[i]}]`;
+        btn.disabled = score < u.cost;
+        btn.onclick = () => {
+          score -= u.cost;
+          purchased[i]++;
+          updateUI();
+        };
+        upgradesDiv.appendChild(btn);
+      });
+    }
+
+    // Click handler
+    clicker.addEventListener("click", ()=>{
+      score += getClickValue();
+      updateUI();
+    });
+
+    // Rebirth + animation
+    rebirthBtn.addEventListener("click", ()=>{
+      overlay.classList.add("active");
+      setTimeout(()=>{
+        overlay.classList.remove("active");
+        score = 0;
+        rebirths++;
+        purchased = Array(upgradeList.length).fill(0);
+        updateUI();
+      }, 2000);
+    });
+
+    // Cheat code panel
+    unlockBtn.addEventListener("click", ()=>{
+      if (cheatCodeIn.value.trim().toUpperCase() === "XYZ") {
+        cookieEditor.style.display = "block";
+      }
+    });
+    setCookieBtn.addEventListener("click", ()=>{
+      const v = parseInt(cookieInput.value,10);
+      if (!isNaN(v) && v>=0) {
+        score = v;
+        updateUI();
+      }
+    });
+
+    updateUI();
+  </script>
+</body>
+</html>
